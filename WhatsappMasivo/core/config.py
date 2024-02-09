@@ -13,6 +13,11 @@ class Settings():
     ORACLE_SERVER_S = os.getenv('ORACLE_SERVER_S','localhost')
     ORACLE_PORT = os.getenv("ORACLE_PORT", 1521)
     ORACLE_DB = os.getenv("ORACLE_DB", "test")
+    ACCESS_TOKEN = os.getenv('ACCESS_TOKEN')
+    APP_ID = os.getenv('APP_ID')
+    APP_SECRET = os.getenv('APP_SECRET')
+    VERSION = os.getenv('VERSION')
+    PHONE_NUMBER = os.getenv('PHONE_NUMBER')
     DIALECT = 'oracle'
     SQL_DRIVER = 'cx_oracle'
     DATABASE_URL = "{dialect}+{driver}://{user}:{psw}@{host}:{port}/?service_name={service}".format(  # noqa

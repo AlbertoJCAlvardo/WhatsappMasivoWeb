@@ -15,7 +15,12 @@ Including another URLconf
 """
 from django.conf.urls import url
 from django.contrib import admin
+from MessageSender.views import initial_page, message_sending, check_message, send_messages
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
+    url(r'data_upload/', initial_page),
+    url(r'message_sending/', message_sending),
+    url(r'check_message/', check_message),
+    url(r'send_messages/', send_messages)
 ]

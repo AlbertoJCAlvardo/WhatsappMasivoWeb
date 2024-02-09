@@ -1,4 +1,59 @@
 <html>
+    <head>
+        {% load static %}
+        <link rel="stylesheet" href="{%  static 'style.css' %}">
+        <link rel="shortcut icon" href="{% static 'logo.ico' %}" type="image/x-icon">
+        <script type = "module" src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"> </script>
+         <script src="{% static 'scripts/message_sender_functions.js' %}">  </script>
+        <title>Whatsapp Masivo</title>
+    </head>
+    <body>
+        
+        <div id="maincontainer">
+            {% block content %}
+            <div id="headerbar">
+                <div id="contlogo">
+                    <img id= "logo" src="{% static 'logo.png' %}">
+                </div>
 
+                <div id="header"><p>Whatsapp Masivo</p></div>    
+                {% if user is not None %}
+                <div id="nombre"><p>{{ user }}</p></div>
+                {% endif %}
+            </div>
+            
+                    <input name="df" id="df" value="{{ df }}" style="display: none;">
+                    
+                    <input type="submit" id="btn-enviar" style="display: none;" onclick="send_messages()"> 
+            
+            <div id="message-container">
 
+            
+                <div class="chat-message">
+                    <textarea placeholder="Mensaje" id="message" onchange="enableSend()" oninput="enableSend()"></textarea>
+                    <input id="test" value="{{ test }}" style="display: none;"> 
+                    
+                    <div id="button-box">
+                        <button id="check-btn" class="check-button" onclick="check_message()">Revisar</button>
+                        <button class="send-button" id="send-btn" onclick="document.getElementById('btn-enviar').click()">Enviar</button>
+                    </div>
+                </div>
+                
+                <div id="column-container">
+                    <select id = "column-select" class='options' name="opcion">
+                        <option value="">Datos</option>  
+                        {% for x in headers %}
+                            <option value='{{ x }}'>{{ x }}</option>
+                        {% endfor %}
+                    </select>
+                    <button id="insert-button" onclick="add_column()">INSERTAR</button>
+                </div>
+            </div>
+            <div id="popup-windo" class="popup-window">
+            </div>
+           
+            {% endblock content %}
+        </div>
+    </body> 
+    
 </html>
