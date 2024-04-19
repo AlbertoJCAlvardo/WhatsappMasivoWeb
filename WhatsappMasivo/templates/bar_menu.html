@@ -1,0 +1,74 @@
+
+        <svg style="display:none;">
+            <defs>
+          
+              <g id="home">
+                
+                <path  d="M12 3.1875L21.4501 10.275L21.0001 11.625H20.25V20.25H3.75005V11.625H3.00005L2.55005 10.275L12 3.1875ZM5.25005 10.125V18.75H18.75V10.125L12 5.0625L5.25005 10.125Z"/>
+              </g>
+          
+              <g id="message">
+                <path  d="M0,9l4,1.5L6,16l2.861-3.82L14,14l2-14L0,9z M7.169,11.44l-0.916,2.485l-1.086-3.118l8.402-7.631L7.169,11.44z"/>
+              </g>
+          
+              <g id="chat">
+                <path  d="M12 4.5C7.85786 4.5 4.5 7.85786 4.5 12C4.5 14.3287 5.56045 16.4092 7.22758 17.786L7.5 18.0109V19.5H12C16.1421 19.5 19.5 16.1421 19.5 12C19.5 7.85786 16.1421 4.5 12 4.5ZM3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12C21 16.9706 16.9706 21 12 21H6V18.7083C4.15984 17.0613 3 14.6658 3 12Z"/>
+              </g>
+          
+              <g id="archive">
+                <path  d="M6.24223 4.5H17.7578L19.5 8.85556V18L18.75 18.75H5.25L4.5 18V8.85556L6.24223 4.5ZM7.25777 6L6.35777 8.25H17.6422L16.7422 6H7.25777ZM18 9.75H6V17.25H18V9.75ZM9.59473 13.6553L10.6554 12.5946L11.25 13.1892V11.25H12.75V13.1894L13.3447 12.5946L14.4054 13.6553L12.0001 16.0606L9.59473 13.6553Z"/>
+              </g>
+          
+            </defs>
+          </svg>
+          
+          
+          <nav class="nav__cont" id="navv">
+            <ul class="nav">
+              <li class="nav__items ">
+                <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 25 25" onclick="document.getElementById('gotologin').click()">
+                  <use xlink:href="#home"></use>
+                </svg>
+                <a onclick="document.getElementById('gotologin').click()">Login</a>
+              </li>
+              
+              <li class="nav__items ">
+                <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 22 22"  onclick="document.getElementById('gotoenviomasivo').click()">
+                  <use xlink:href="#message"></use>
+                </svg>
+                <a onclick="document.getElementById('gotoenviomasivo').click()">Envio Masivo</a>
+              </li>
+                
+              <li class="nav__items ">
+                <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 25 25" onclick="document.getElementById('gotochat').click()">
+                  <use xlink:href="#chat"></use>
+
+                </svg>
+               <a onclick="document.getElementById('gotochat').click()">Chat</a>
+              </li>
+                
+              <li class="nav__items ">
+              
+                <svg class="icon" id="btnarchive"  xmlns="http://www.w3.org/2000/svg" viewBox="0 0 25 25" onclick="document.getElementById('gotohistory').click()">
+                  <use xlink:href="#archive"></use></svg>
+                <a onclick="document.getElementById('gotohistory').click()">Historial</a>
+           
+
+              </li>
+                  
+            </ul>
+          </nav>
+          
+          <form action="/login" method="get">
+            <input type="submit" id="gotologin" style="display: none;">
+          </form>
+          <form action="/chat" method="GET">
+            <input type="hidden" name="user" value="{{ user }}" />
+            <input type="hidden" name="session_id" value="{{ session_id }}" />
+            <input type="submit" id="gotochat" style="display: none;">
+          </form>
+
+
+
+
+            

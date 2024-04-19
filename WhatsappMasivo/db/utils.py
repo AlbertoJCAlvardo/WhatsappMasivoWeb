@@ -4,17 +4,88 @@ from datetime import datetime
 from core.format import set_format,set_upper_format
 from core.config import settings
 
-class DataObtention:
+class DatabaseManager:
     
 
     def __init__(self,user=None):    
         
-        
+        print
         if user=='sistemas':
           self.DATABASE_URL = settings.DATABASE_URL_S
         else:
             self.DATABASE_URL = settings.DATABASE_URL
+
+    def insert_message_response(self, message_data):
+        try:
+            database = create_engine(self.DATABASE_URL)
+            connection = database.connect(database.url)
+
+            if connection.closed:
+                connection.connect()
+            
+
+            query = f"""
+                    INSERT INTO 
+                    CL.WHATSAPP_MASIVO_RESPUESTA 
+                    (FECHA, ORIGEN, DESTINO, WAMID, CONVERSATION_ID, TIPO, CONTENIDO, USUARIO, STATUS, PROFILE_NAME)
+
+                    VALUES (TO_DATE('{message_data['date']}', 'RRRR-MM-DD hh24:mi:ss'), '{message_data["origin"]}',
+                        '{message_data['destiny']}', '{message_data['wamid']}', '{message_data['conversation_id']}', 
+                        '{message_data['message_type']}', '{message_data['content']}', '{message_data['user']}', 'unread', '{message_data['name']}')
+                """
+            result = database.execute(query)
+            
+        except Exception as e:
+            print(repr(e))
+
     
+    
+    def insert_message_registry(self, message_data):
+        try:
+            database = create_engine(self.DATABASE_URL)
+            connection = database.connect(database.url)
+
+            if connection.closed:
+                connection.connect()
+           
+                
+
+            query = f"""
+                        INSERT INTO 
+                        CL.WHATSAPP_COMUNICATE
+                        (FECHA, USUARIO, DESTINO, MENSAJE, STATUS_ENVIO, TIPO_MENSAJE, NOMBRE_MENSAJE, ORIGEN, WAMID)
+
+                        VALUES (TO_DATE('{message_data['date']}', 'RRRR-MM-DD hh24:mi:ss'), '{message_data["user"]}',
+                          '{message_data['destiny']}', '{message_data['message']}', '{message_data['status_envio']}', 
+                          '{message_data['type']}', '{message_data['message_name']}', '{message_data['origin']}', '{message_data['wamid']}')
+                    """
+            
+            result = database.execute(query)
+
+            
+
+        except Exception as e:
+            raise(e)
+
+    def update_message_status(self, message_data):
+        database = create_engine(self.DATABASE_URL)
+        connection = database.connect(database.url)
+
+        if connection.closed:
+            connection.connect()
+        
+        try:
+
+            query = f""" 
+                        UPDATE CL.WHATSAPP_COMUNICATE 
+                        SET STATUS_MENSAJE = '{message_data['status']}',
+                            CONVERSATION_ID = '{message_data['conversation_id']}'
+                        WHERE WAMID = '{message_data['wamid']}'
+                    """
+            result = database.execute(query)
+        except Exception as e:
+            print(repr(e))
+
     def check_db_connected(self):
         try:
             database = create_engine(self.DATABASE_URL)
@@ -44,166 +115,9 @@ class DataObtention:
         except Exception as e:
             raise e
 
-    def get_total_para_deposito(self,empresa,fecha_inicio,fecha_fin,tipo_de_anticipo):
-        try:
-            database = create_engine(self.DATABASE_URL)
-            connection = database.connect(database.url)
+ 
 
-            if connection.closed:
-                connection.connect()
-            
-            ls1 = fecha_inicio.split(' ')
-            ls2 = fecha_fin.split(' ')
-
-            fecha_inicio = f'{ls1[0]} {ls1[1]}'
-            fecha_fin = f'{ls2[0]} {ls2[1]}'
-
-            query = f"""SELECT (SELECT NOMBRE FROM CL.CM_BANCO WHERE BANCO_ID = BANCO) BANCO,  
-                                 NVL (SUM (MONTO), 0) MONTO_DEPOSITO
-                         FROM CL.CS_ANTICIPO
-                         WHERE FECHA_LIQUIDACION BETWEEN TO_DATE('{fecha_inicio}','DD/MM/YYYY HH:MI:SS') AND TO_DATE('{fecha_fin}','DD/MM/YYYY HH:MI:SS')
-                         AND EMPRESA = '{empresa}'
-                         AND FORMA_PAGO = 'D'
-                         AND ORIGEN = NVL ('{tipo_de_anticipo}', ORIGEN)
-                         GROUP BY BANCO
-                    """
-            
-            with connection.connect() as cn:
-                start_tipe = datetime.now()
-                results = cn.execute(query)
-                headers = list(
-                            map(lambda item: set_upper_format(item),results.keys())        
-                        )
-                
-                data = []
-
-                index = 1
-                    
-                for row in results:
-                    try:
-                        row_item = list(
-                                    map(lambda item: set_format(item), row._mapping.values())
-                                )
-                        data.append(row_item)
-                    except Exception as e:
-                        print('traceback ', index, ': >',e)
-                        pass
-
-                    index += 1
-                cn.close()
-                
-                return headers, data
-        except Exception as e:
-            print('Error')
-            raise e
-
-
-    def get_total_para_cheques(self,empresa,fecha_inicio,fecha_fin,tipo_de_anticipo):
-
-        try:
-            
-            database = create_engine(self.DATABASE_URL)
-            connection = database.connect(database.url)
-
-            if connection.closed:
-                connection.connect()
-
-            ls1 = fecha_inicio.split(' ')
-            ls2 = fecha_fin.split(' ')
-
-            fecha_inicio = f'{ls1[0]} {ls1[1]}'
-            fecha_fin = f'{ls2[0]} {ls2[1]}'
-
-
-
-            query = f"""SELECT NVL (SUM (MONTO), 0)
-                        FROM CL.CS_ANTICIPO
-                        WHERE FECHA_LIQUIDACION BETWEEN 
-                        TO_DATE('{fecha_inicio}','DD/MM/YYYY HH:MI:SS') AND 
-                        TO_DATE('{fecha_fin}','DD/MM/YYYY HH:MI:SS')
-                        AND EMPRESA = '{empresa}'
-
-                        AND ORIGEN = NVL ('{tipo_de_anticipo}', ORIGEN)
-                        AND FORMA_PAGO = 'C'
-                    """
-            
-            with connection.connect() as cn:
-                start_tipe = datetime.now()
-                results = cn.execute(query)
-                headers = list(
-                            map(lambda item: set_upper_format(item),results.keys())        
-                        )
-                
-                data = []
-
-                index = 1
-                    
-                for row in results:
-                    try:
-                        row_item = list(
-                                    map(lambda item: set_format(item), row._mapping.values())
-                                )
-                        data.append(row_item)
-                    except Exception as e:
-                        print('traceback ', index, ': >',e)
-                        pass
-
-                    index += 1
-                cn.close()
-                
-                return headers, data
-
-        except Exception as e:
-            print('Error')
-            raise e
-
-    def get_empresas(self):
-
-        try:
-            
-            database = create_engine(self.DATABASE_URL)
-            connection = database.connect(database.url)
-
-            if connection.closed:
-                connection.connect()
-
-            query = """
-                      SELECT DISTINCT CLAVE, NOMBRE
-                      FROM   CL.AL_EMPRESAS
-                      WHERE  CLAVE IS NOT NULL
-                      ORDER BY NOMBRE
-                    """
-        
-            with connection.connect() as cn:
-                start_tipe = datetime.now()
-                results = cn.execute(query)
-                headers = list(
-                            map(lambda item: set_upper_format(item),results.keys())        
-                        )
-            
-                data = []
-
-                index = 1
-                    
-                for row in results:
-                    try:
-                        row_item = list(
-                                    map(lambda item: set_format(item), row._mapping.values())
-                                )
-                        data.append(row_item)
-                    except Exception as e:
-                        print('traceback ', index, ': >',e)
-                        pass
-
-                    index += 1
-                cn.close()
-
-                return headers, data
-
-        except Exception as e:
-            print('Error')
-            raise e
-
+    
     
     def execute_query(self,query):
         try:
@@ -227,6 +141,7 @@ class DataObtention:
                 index = 1
                     
                 for row in results:
+                    
                     try:
                         row_item = list(
                                     map(lambda item: set_format(item), row._mapping.values())
@@ -295,4 +210,28 @@ class DataObtention:
         except Exception as e:
             print('Error')
             raise e
+
+    def update_seen_status(self, chat_id):
+        database = create_engine(self.DATABASE_URL)
+        connection = database.connect(database.url)
+
+        if connection.closed:
+            connection.connect()
+        
+        try:
+
+            query = f"""UPDATE CL.WHATSAPP_MASIVO_RESPUESTA
+                        SET STATUS = 'seen'
+                           
+                        WHERE STATUS = 'unread'
+                        AND  CONVERSATION_ID = '{chat_id}'
+                    """
+            result = database.execute(query)
+            
+            result = database.execute("COMMIT")
+        except Exception as e:
+            print(repr(e))
+
+
+           
         

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Chat</title>
+        {% load static %}
+        <link rel="stylesheet" href="{%  static 'styles/style.css' %}">
+        <link rel="stylesheet" href="{%  static 'styles/chat_style.css' %}">
+        <link rel="stylesheet" href="{%  static 'styles/navbarstyle.css' %}">
+
+        <link rel="shortcut icon" href="{% static 'logo.ico' %}" type="image/x-icon">
+        <script src="{% static 'scripts/chat/chat_utils.js' %}">  </script>
+        <script type = "module" src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"> </script>
+        <script  type="module" src="{% static 'scripts/chat/chat_window.js' %}">  </script>
+        -<script  type="module" src="{% static 'scripts/chat/contact_chat.js' %}">  </script>
+    </head>
+    <body>
+        
+        <div id="maincontainer">
+            <div id="headerbar">
+                <div id="contlogo">
+                    <img id= "logo" src="{% static 'logo.png' %}">
+                </div>
+                <div id="header"><p>Whatsapp Masivo</p></div>    
+                <div id="nombre"><p>{{ user }}</p></div>
+            </div>
+            <div id="sidebar">
+                {% include 'bar_menu.html' with user=user%}
+            </div>
+            <input name="user" value="{{ user }}" id="user" style="visibility: hidden;">
+            <div class="wa-container">
+                
+                <div class="container">
+                    <div class="leftSide">
+                        <!-- Header -->
+                        <div class="header-wa">
+                            
+                            <ul class="nav_icons">
+                                <li><ion-icon name="scan-circle-outline"></ion-icon></li>
+                                <li><ion-icon name="chatbox"></ion-icon></li>
+                                <li><ion-icon name="ellipsis-vertical"></ion-icon></li>
+                            </ul>
+                        </div>
+                        
+                        <!-- Search Chat -->
+                        <div class="search_chat">
+                            <div>
+                                <input type="text" placeholder="Search or start new chat">
+                                <ion-icon name="search-outline"></ion-icon> 
+                            </div>                
+                        </div>
+                        <!-- CHAT LIST -->
+                        <div class="chatlist" id="chat_list">
+                            
+                        </div>
+                    </div>
+                    <div class="rightSide">
+                        <div class="header-wa">
+                            <div class="imgText" id="chat_name">
+                                
+                               
+                            </div>
+                            <ul class="nav_icons">
+                                <li><ion-icon name="search-outline"></ion-icon></li>
+                                <li><ion-icon name="ellipsis-vertical"></ion-icon></li>
+                            </ul>
+                        </div>
+
+                        <!-- CHAT-BOX -->
+                        <div class="chatbox" id="chat_box">
+                            
+                        </div>
+                        
+                        <!-- CHAT INPUT -->
+                        <div class="chat_input">
+                            <ion-icon name="happy-outline"></ion-icon>
+                            <!-- <ion-icon name="happy-outline"></ion-icon> -->
+                            <input type="text" placeholder="Type a message">
+                            <ion-icon name="mic"></ion-icon>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <input onload="start()" id="contactloader" style="visibility: none;">
+    </body>
+
+        <script type="module" src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js"></script>
+        <script nomodule src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"></script>
+    
+</html>

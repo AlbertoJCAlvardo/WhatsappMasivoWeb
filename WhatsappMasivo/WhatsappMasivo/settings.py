@@ -25,18 +25,22 @@ SECRET_KEY = 'd^b*%ngvgzkd(vuf@9(46++pl#e&2x74i&i%x@rr#)q&@_!ntj'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['localhost', '192.168.83.117']
+
 
 
 # Application definition
 
 INSTALLED_APPS = [
+    'django_sass',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'MessageSender',
+    'ChatModule',
 ]
 
 MIDDLEWARE = [
@@ -106,7 +110,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'America/Mexico_City'
 
 USE_I18N = True
 

@@ -13,14 +13,32 @@ Including another URLconf
     1. Import the include() function: from django.conf.urls import url, include
     2. Add a URL to urlpatterns:  url(r'^blog/', include('blog.urls'))
 """
+from django.urls import path
 from django.conf.urls import url
 from django.contrib import admin
-from MessageSender.views import initial_page, message_sending, check_message, send_messages
+from MessageSender.views import (index, login, data_upload, message_sending, check_message, send_messages,
+                                 template_registry, home, upload_file, file_test)
+from ChatModule.views import (chat_module, whatsapp_webhook, chat_window, chat_list, api_image, get_pages,
+                              update_seen)
 
 urlpatterns = [
-    url(r'^admin/', admin.site.urls),
-    url(r'data_upload/', initial_page),
-    url(r'message_sending/', message_sending),
-    url(r'check_message/', check_message),
-    url(r'send_messages/', send_messages)
+    path('',login),
+    path('admin/', admin.site.urls),
+    path('login/',login),
+    path('data_upload/', data_upload),
+    path('message_sending/', message_sending),
+    path('check_message/', check_message),
+    path('send_messages/', send_messages),
+    path('register_template/',template_registry),
+    path('chat/', chat_module),
+    path('94710d4c-3596-4d40-82d0-385c360a63a9/', whatsapp_webhook),
+    path('tyc/',login),
+    path('chat_window/', chat_window),
+    path('chat_list/', chat_list),
+    path('image_api/', api_image),
+    path('message_pages/', get_pages),
+    path('update_seen/', update_seen),
+    path('upload_file/', upload_file),
+    path('file_test', file_test),
 ]
+ 

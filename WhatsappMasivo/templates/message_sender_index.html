@@ -1,10 +1,13 @@
 <html>
     <head>
         {% load static %}
-        <link rel="stylesheet" href="{%  static 'style.css' %}">
+        <link rel="stylesheet" href="{%  static 'styles/style.css' %}">
+        <link rel="stylesheet" href="{%  static 'styles/navbarstyle.css' %}">
+
         <link rel="shortcut icon" href="{% static 'logo.ico' %}" type="image/x-icon">
         <script type = "module" src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"> </script>
          <script src="{% static 'scripts/message_sender_functions.js' %}">  </script>
+         <script src="{% static 'scripts/utils.js' %}">  </script>
         <title>Whatsapp Masivo</title>
     </head>
     <body>
@@ -17,36 +20,66 @@
                 </div>
 
                 <div id="header"><p>Whatsapp Masivo</p></div>    
-                {% if user is not None %}
-                <div id="nombre"><p>{{ user }}</p></div>
+                {% if user_name is not None %}
+                <div id="nombre"><p>{{ user_name }}</p></div>
                 {% endif %}
             </div>
+            <div id="sidebar">
+                {% include 'bar_menu.html' with user=user session_id=session_id%}
+            </div>
+            
             
                     <input name="df" id="df" value="{{ df }}" style="display: none;">
-                    
+                    <input name="user" id="user" value="{{ user }}" style="display: none;">
                     <input type="submit" id="btn-enviar" style="display: none;" onclick="send_messages()"> 
             
             <div id="message-container">
 
-            
-                <div class="chat-message">
-                    <textarea placeholder="Mensaje" id="message" onchange="enableSend()" oninput="enableSend()"></textarea>
-                    <input id="test" value="{{ test }}" style="display: none;"> 
-                    
-                    <div id="button-box">
-                        <button id="check-btn" class="check-button" onclick="check_message()">Revisar</button>
-                        <button class="send-button" id="send-btn" onclick="document.getElementById('btn-enviar').click()">Enviar</button>
+                <input id="test" value="{{ test }}" style="display: none;"> 
+                
+                <div class="chat-message" id="chat_message">
+                    <div id="message-header-cont">
+                        <textarea placeholder="Encabezado" id="message-header" maxlength="25" onchange="enableSend()" oninput="enableSend()" onmouseup="change_active()" ></textarea>
                     </div>
+                    <textarea placeholder="Mensaje" id="message-body" onchange="enableSend()" oninput="enableSend()" onmouseup="change_active()"></textarea>
+                    <textarea placeholder="Pie de mensaje" id="message-footer" maxlength="25" 
+                    onchange="enableSend()" oninput="enableSend()" ></textarea>
+                   
+                    
+                    
                 </div>
                 
                 <div id="column-container">
+                    <button class="switch-button" id="header-switch" >
+                        <div class="image-description" style="display: none;" id="sw-description">
+                            Cambiar a Imagen
+                        </div>
+                        <img src="{% static 'vectors/image.svg' %}" >
+                    </button>
+                    <select id="number-select" class="options" name="telefono">
+                        <option value="cobranza">Cobranza</option>
+                        <option value="redpotencia">Red Potencia</option>
+                    </select>
                     <select id = "column-select" class='options' name="opcion">
                         <option value="">Datos</option>  
                         {% for x in headers %}
                             <option value='{{ x }}'>{{ x }}</option>
                         {% endfor %}
                     </select>
-                    <button id="insert-button" onclick="add_column()">INSERTAR</button>
+                    <div class="button-menu">
+                        <div class="bc">
+                            <button id="insert-button" onclick="add_column()">Insertar</button>
+                        </div>
+                        <div class="bc">
+                            <button id="check-btn" class="cc-button check-button" onclick="check_message()">Revisar</button>
+                        </div>
+                        <div class="bc">
+                            <button class="cc-button" id="add-buttons"  onclick="add_button()">Añadir Botón</button>
+                        </div>
+                        <div class="bc">
+                            <button class="cc-button, send-button" id="send-btn" onclick="document.getElementById('btn-enviar').click()">Enviar</button>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div id="popup-windo" class="popup-window">
@@ -54,6 +87,16 @@
            
             {% endblock content %}
         </div>
+        <input type="file" accept="image/*" id="img-button" style="display:none;"/>
+        <input type="file" id="file-button" style="display:none;"/>
+        <script type="text/javascript">
+            var img_arr = ["{% static 'vectors/image.svg' %}",
+                           "{% static 'vectors/archive.svg' %}",
+                           "{% static 'vectors/chat.svg' %}"]
+            let csv_img = "{% static 'images/csv_image.png' %}";
+            let file_img = "{% static 'images/file_image.png' %}";
+        </script>
     </body> 
+    
     
 </html>

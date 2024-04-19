@@ -1,0 +1,86 @@
+<html>
+    <head>
+        <title>Login</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        {% load static %}
+        
+        <link rel="stylesheet" href="{%  static 'styles/login_style.css' %}">
+        <link rel="stylesheet"  href="{%  static 'styles/util.css' %}">
+        <link rel="stylesheet" href="{%  static 'styles/style.css' %}">
+        <script src="https://ajax.aspnetcdn.com/ajax/jQuery/jquery-3.2.1.min.js"></script>
+        <script type = "module" src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"> </script>
+        <script src="{% static 'scripts/utils.js' %}"> </script>
+        <script src="{% static 'scripts/login.js' %}"> </script>
+        <link rel="shortcut icon" href="{% static 'logo.ico' %}" type="image/x-icon">
+    </head>
+    <body>
+        {% block content%}
+
+        {% if message is not None %}
+                <input id="message" value="{{ message }}">
+            <script>
+            showMessageScreen(document.getElementById('message').value);
+            </script>
+             
+        
+        {% endif %}
+      
+        <div id="maincontainer">
+            <div id="headerbar">
+                <div id="contlogo">
+                    <img id= "logo" src="{% static 'logo.png' %}">
+                </div>
+                <div id="header"><p>Whatsapp Masivo</p></div>    
+                
+            </div>
+            <div class="login-div">
+                    <div class="limiter">
+                        <div class="container-login100">
+                            <div class="wrap-login100">
+                                <form class="login100-form validate-form" action="/login/" method="post">
+                                    <span class="login100-form-title p-b-26">
+                                        Inicio de Sesion
+                                    </span>
+                                    <span class="login100-form-title p-b-48">
+                                        <i class="zmdi zmdi-font"></i>
+                                    </span>
+                
+                                    <div class="wrap-input100 validate-input" >
+                                        <input class="input100" type="text" name="user" id="user" style="text-transform: uppercase;">
+                                        <span  id="spanuser" class="focus-input100" data-placeholder="Usuario"></span>
+                                    </div>
+                
+                                    <div class="wrap-input100 validate-input" data-validate="Ingrese Contraseña">
+                                        <span class="btn-show-pass">
+                                        <i class="zmdi zmdi-eye"></i>
+                                        </span>
+                                    <input class="input100" type="password" name="pass" id="password">
+                                    <span id="spanpassword" class="focus-input100" data-placeholder="Contraseña"></span>
+                                </div> 
+            
+                                
+                                
+            
+                                
+                            </form>
+                            <div class="container-login100-form-btn">
+                                <div class="wrap-login100-form-btn">
+                                    <div class="login100-form-bgbtn"></div>
+                                    <button class="login100-form-btn" id="btn-ingresar" onclick="validateLogin();">
+                                        Ingresar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+            
+              
+            </div>   
+        </div>
+        {% endblock content %}
+    
+    </body>
+</html>
