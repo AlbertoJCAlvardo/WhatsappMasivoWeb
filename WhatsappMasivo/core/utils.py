@@ -117,7 +117,7 @@ def validate_login(user, password):
 
 
 
-async def register_template(message, data):
+async def register_template(components):
 
     template_name = f'edilar_{datetime.now(pytz.timezone("Mexico/General")).strftime("%y%m%d_%H%M%S")}'
 
@@ -126,42 +126,10 @@ async def register_template(message, data):
         }
     url = f"https://graph.facebook.com/v18.0/{settings.BUSINESS_ACCOUNT_ID}/message_templates"
     
-    print(data)
-
-    header_data = data['header_data']
-    body_data = data['body_data']
-    
-    header_comp = {"type": "HEADER",
-                    "format": "TEXT",
-                    "text": message['header']}
-
-    if len(header_data.columns) > 0:
-        header_comp['example'] = {'header_text':
-                                        get_components(data=header_data)
-                                    
-                                } 
-    
-    body_comp = {"type": "BODY",
-                 "text": message['body']}
-
-    if len(body_data.columns) > 0:
-        body_comp['example'] = {'body_text':[
-                                        get_components(data=body_data)
-                                    ]
-                                } 
-
-
     body = {"name": template_name,
             "language": "es",
             "category": "MARKETING",
-            "components": [
-                    header_comp,
-                    body_comp,
-                    {
-                        "type": "FOOTER",
-                        "text": message['footer']
-                    }
-            ]
+            "components": components
         }
     print(body)
 
@@ -281,7 +249,7 @@ def to_parameters(params:list):
         dic_list.append(aux)
     return dic_list
 
-async def send_message(number, template_name, data):
+async def send_message(number, template_name, components):
     try:
 
         headers = {
@@ -289,19 +257,7 @@ async def send_message(number, template_name, data):
         "Authorization": f"Bearer {settings.ACCESS_TOKEN}",
         }
         
-        header_data = data['header']
-        body_data = data['body']
-
-        components = []
-        if len(header_data) > 0:
-            components.append({ "type": "header",
-                                "parameters": to_parameters(header_data)
-                                    })
         
-        components.append({
-                            "type": "body",
-                            "parameters": to_parameters(body_data)
-                                    })
         body = {"messaging_product": "whatsapp", 
                 "recipient_type": "individual",
                     "to": f"{number}",
@@ -311,8 +267,6 @@ async def send_message(number, template_name, data):
                                  "components": components
                     }
                 }
-        
-        
        
         body = json.dumps(body)
         print(body)
@@ -533,7 +487,7 @@ async def get_image_from_url(url):
         return "Error" 
     
 
-async def send_text_mesage(message, destiny, phone_number):
+async def send_text_mesage(body, destiny, phone_number):
     try:
         phone_number_id = ""
         if phone_number == 'edilar':

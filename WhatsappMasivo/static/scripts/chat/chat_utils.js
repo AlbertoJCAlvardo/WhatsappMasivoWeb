@@ -5,6 +5,7 @@ var contacts_page = 1;
 var messages_page = 1;
 var current_name = ""; 
 let chat_li = [];
+let button_send;
 var active_chat; 
 
 let chat_list = document.getElementById('chat_list');
@@ -71,17 +72,76 @@ window.onload = function() {
         rootMargin: '0px',
         treshold: 0.1
     };
+    console.log('adding');
     add_chats(1);
     start();
 
     observer = new IntersectionObserver(handleChatIntersection, options1);
     contactObserver = new IntersectionObserver(handleContactIntersection, options2);
+
+    button_send = document.getElementById('send_button');
+    const msg_input = document.getElementById('message_input');
+
+    button_send.innerHTML = '<ion-icon name="mic"></ion-icon>';
+    const inio = document.createElement('ion-icon');
+    inio.name = 'mic';
+    inio.style.fontsize = '1.8em';
+    button_send.onclick = (e) => {
+        showMessageScreen('Escriba Texto Antes de Enviar');
+    };
+    msg_input.oninput = send_button_change; 
+    msg_input.onchange= send_button_change; 
+    
+    
+};
+
+function send_button_change(event){
+    var inio = document.createElement('ion-icon');
+    
+    if(document.getElementById('message_input').value != ""){
+        button_send.innerHTML = '';
+        inio.name = 'send';
+        inio.font
+        inio.style.fontSize = '1.4em';
+        inio.setAttribute("transform", "rotate(45)");
+        button_send.appendChild(inio);
+        button_send.onclick = send_message;
+    }
+    else{
+        button_send.innerHTML = '';
+        inio.name = 'mic';
+        inio.style.fontSize = '1.8em';
+        inio.setAttribute("transform", "rotate(45)");
+        button_send.appendChild(inio);
+        button_send.onclick = (e) => {
+            showMessageScreen('Escriba Texto Antes de Enviar');
+        };
+    }
+
+
+}
+
+async function send_message(){
+    
+    const message = document.getElementById('message').value;
+    console.log(active_chat);
+    
+    await axios.post('/send_text_message', {
+        'message':message,
+        'chat_id': active_chat['chat_id']
+    })
+    .then((response) => {
+
+    })
+    .catch((error) => {
+
+    });
     
 };
 
 async function add_chats(page){
     
-    
+    console.log(user);
     chat_li = [];
     await axios.get('/chat_list/', {
         params:{
@@ -89,7 +149,7 @@ async function add_chats(page){
             page: chats_page
         }
     }).then(function (response){
-      
+        console.log(response.data);
         if(response.status == 200){
             const data = response['data'];
             let sw = 1;
@@ -156,12 +216,13 @@ async function add_chats(page){
 
 async function showChat(page, chat_id){
     let pages;
-   
+    let cinput = document.getElementById('chinput');
+    cinput.style.display = "";
     await axios.get('/message_pages/', {
         params:{'chat_id': chat_id}
     }).then(function(response){
         if(response.status == 200){
-
+            console.log(response);
             pages = response['data']['paginas'];
             console.log(response['data']);
             if(page <= pages + 1){

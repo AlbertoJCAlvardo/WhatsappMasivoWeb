@@ -10,9 +10,9 @@
 
 }
 #headerbar{
-    position: absolute;
-    
-    background-color: #087434;
+    position: fixed;
+    z-index: 1000;
+    background-color: rgba(1, 58, 24, 0.8);
     
     top:0px;
     left:0px;
@@ -20,42 +20,64 @@
     width: 100%;
 }
 #contlogo{
-    position:absolute;
+    position:relative;
 
-    height:70%;
+    height:20%;
     width:10%;
-    top:25%;
-    left:0%;
-    margin-top: 10px;
-    margin-right: 10px;
+    top:30%;
+    left:1%;
+    line-height: 1.3;
+    font-weight: 400;
+    margin-right: 20px;
     margin-left: 10px;
 }
-#logo{
-    position: relative;
-    height:70%;
-    width:100%;
-    
+#contlogo img{
+    max-width: 210px;
+    max-height: 70px;
 }
+@keyframes color_change {
+    0% { color: rgba(0,0,0,0); }
+    100% { color: #056833; }
+  }
 #header{
     position: absolute;
-    top: 20%;
+    top: 0%;
     left:40%;
-    font-size: 30px;
+    height: 100%;
+    width: 25%;
+    font-size: 200%;
     font-weight: bold;
     font-family: 'Lato';
     color:azure;
-    height: 100%;
-    
-    
+    font-weight: 400;
 }
+
 #nombre{
     position:absolute;
     left:90%;
-    top:35%;
+    top:25%;
     font-weight: bold;
     font-family: 'Lato';
+    font-size: 17px;
     color:azure;
     
+}
+
+#nombre a:link { 
+    text-decoration: none; 
+  } 
+#nombre  a:visited { 
+    text-decoration: none; 
+    color: azure;
+  } 
+#nombre  a:hover { 
+    text-decoration: none; 
+    color: rgba(0,0,0,0.5);
+
+
+  } 
+#nombre  a:active { 
+    text-decoration: none; 
 }
 #report_form{
     font-family: 'Lato';
@@ -70,12 +92,12 @@
 }
 
 #fileform {
+    position: absolute;
     font-family: 'Lato';
-    height: 20%;
-    width: 50%;
-    position: relative;
+    height: 90%;
+    width: 80%;    
     top:15%;
-    left:25%;
+    left:20%;
     margin-bottom: 2%;
     display: inline-block;
     align-self: center;
@@ -83,6 +105,15 @@
     align-items: center;
 
 }
+.horiform{
+    margin-top: 5%;
+    display: flex;
+
+    margin-left: 10%;
+    width: 50%;
+    position: fixed;
+}
+
 #fileform form{
    
     left:25%;
@@ -121,25 +152,26 @@
     transition: 30s;
 }
 .boton-archivo{
-    
-    height: 40%;
-    width: 100%;
+    position:fixed;
+    max-width:700px;
+    max-height: 200px;
+    height: 15%;
+    width: 40%;
     color: #FFFFFF;
-    font-family: sans-serif;
-    
+    font-family: 'Lato';
+    left:15%;
+    top: -25%;
     background-color: #056833;
-  
-    
-    border-radius: 10px;
+    border-radius: 40px;
     font-weight: bold;
-    
     margin-bottom: 20%;
     border: #056833;
     transition:1s;
 
     background: #056833;
-    font-size: 16px;
-    text-transform: uppercase;
+    font-size: 32px;
+    text-transform: capitalize;
+    font-weight: 100;
     border: none;
     cursor: pointer;
     font-weight: bold;
@@ -148,7 +180,7 @@
     display: inline-block;
     position: relative;
     transition: 0.5s;
-    border-radius: 4px;
+
     
     border: none;
     color: #fff;
@@ -159,22 +191,21 @@
     margin: 36px;
     box-shadow: 0 10px 20px -8px rgba(0, 0, 0,.7);
 }
-.horiform{
-    margin-top: 10%;
-    display: inline-block;
-    margin-left: 10%;
-    width: 20%;
-    position: relative;
+
+.boton-archivo:hover, .side_menu button:hover{
+    padding-bottom: 24px;
+    padding-top:8px;
+    margin-bottom: 24px;
+    margin-top:8px;
+    box-shadow: 0 20px 30px -10px rgba(0, 0, 0,.95);
 }
 
 
-
-
 #fileheader{
-    position:relative;
+    position:fixed;
     width: 100%;
     top:20%;
-    margin-left: 5%;
+    left: 0%;
     text-align: center;
     font-family: 'Lato';
     font-weight: bold;
@@ -205,8 +236,15 @@
 }
 
 #tablecontainer{
+
     top:40%;
-    position: relative;
+    left:30%;
+    margin: 0 auto;
+    height: 50%;
+    width: 50%;
+    overflow-y: scroll;
+    overflow-x: scroll;
+    position: fixed;
     align-items: center;
     align-content: center; 
     align-self: center;
@@ -218,6 +256,7 @@
 
 
 table, tr, td {
+    margin: 0 auto;
     border: 5px;
     font-family: 'Lato';
     font-size: 12px;
@@ -236,7 +275,9 @@ table, tr, td {
 #message-container{
 
     overflow-y: scroll;
+    overflow-x: scroll;
     height: 80%;
+    width: 50%;
     position: fixed;
     width: 70%;
     left: 25%;
@@ -289,8 +330,15 @@ table, tr, td {
     cursor: pointer;
     
   }
-  
-.chat-message button, .bc button, .form-cont button{
+.side_menu {
+    position: fixed;
+    left:85%;
+    display: inline;
+    top:45%;
+    height: 30%;
+    width: 10%;
+}
+.chat-message button, .bc button, .form-cont button, .side_menu button{
     background: #056833;
     font-size: 15px;
     text-transform: capitalize;
@@ -302,13 +350,13 @@ table, tr, td {
     display: inline-block;
     position: relative;
     transition: 0.5s;
-    border-radius: 4px;
-    height: 50px;
+    border-radius: 10px;
+    height: 45px;
     border: none;
     color: #fff;
     
     padding: 16px;
-    width: 80%;
+    width: 100%;
     transition: 0.4s;
     cursor: pointer;
     margin-top: 5%;
@@ -317,6 +365,11 @@ table, tr, td {
     box-shadow: 0 10px 20px -8px rgba(0, 0, 0,.7);
     transition: 1.2s;
     }
+
+.side_menu button{
+    margin-bottom: 30px;
+    transition: 0.5s;
+}
 #column-container button{
     left:15%;
     width:85%;
@@ -325,7 +378,7 @@ table, tr, td {
     padding-top: 8px;
     padding-bottom:24px;
     background:  rgba(2, 80, 51,0.95);
-    transition:.0.8s;
+    transition:.0.5s;
 }
 
 .send-button, .check-button{
@@ -794,4 +847,26 @@ textarea::placeholder{
      transition: 0.5s;
      padding-top: 15px;
      padding-bottom: 5px;
+}
+.carrussel{
+    position: absolute;
+    display: inline-flex;
+    left: 0%;
+    top:0%;
+    width: 100%;
+    height: 85%;
+    z-index: -1;
+
+}
+@keyframes fadeIn {
+    0% { opacity: 0; }
+    100% { opacity: 1; }
+  }
+.carrussel img{
+    position: fixed;
+    max-width: 100%;
+    object-fit: cover;
+    transition: opacity 1s ease-out 0.6s;
+    -webkit-transition: opacity 1s ease-out 2s;;
+  
 }

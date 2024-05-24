@@ -3,6 +3,9 @@
         {% load static %}
         <link rel="stylesheet" href="{%  static 'styles/style.css' %}">
         <link rel="stylesheet" href="{%  static 'styles/navbarstyle.css' %}">
+        <script src="{% static 'scripts/data_upload.js' %}">  </script>
+         <script src="{% static 'scripts/utils.js' %}">  </script>
+         <script type = "module" src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"> </script>
         <title>Carga de Base de Datos</title>
         <link rel="shortcut icon" href="{% static 'logo.ico' %}" type="image/x-icon">
     </head>
@@ -13,10 +16,15 @@
 
             <div id="headerbar">
                 <div id="contlogo">
-                    <img id= "logo" src="{% static 'logo.png' %}">
+                    <img id= "logo" src="{% static 'images/edilar_transparente.png' %}">
                 </div>
+    
                 <div id="header"><p>Whatsapp Masivo</p></div>    
+                
+                {% if user_name is not None %}
                 <div id="nombre"><p>{{ user_name }}</p></div>
+                {% endif %}
+                
             </div>
 
             <div id="sidebar">
@@ -24,88 +32,54 @@
             </div>
             
             <div id="fileform" >
-                <div id="fileheader">
-                    <h2>Seleccione un archivo</h2>
-                </div> 
-                <form action="/data_upload/" method="post" enctype="multipart/form-data" >
-                    {% csrf_token %}
-                    <input type="file" accept=".xlsx, .csv" name="docfile" id="id_docfile">
-                    <input type="text" name="user" value="{{ user }}" style="display: none;">  
-                    <input type="text" name="session_id" value="{{ session_id }}" style="display: none;">  
-                    <input type="submit" id="check" style="display: none;">
+                 
+                
+                <input type="file" accept=".xlsx, .csv" name="docfile" id="file_input" style="display: none;">
+                <input type="text" name="user" value="{{ user }}" style="display: none;">  
+                <input type="text" name="session_id" value="{{ session_id }}" style="display: none;">  
+                <input type="submit" id="check" style="display: none;">
                     
-                </form>
+                
                 <form action="/message_sending/" method="post"  >
                     {% csrf_token %}
                     <input type="submit" id="message_sending" style="display:none">
-                    <input  name="df" value="{{ df }}" style="display: none;">  
+                    <input  id="dfinput" name="df" style="display: none;">  
                     <input name="user" value="{{ user }}" style="display: none;">
-                    <input type="text" name="filename" value="{{ filename }}" style="display: none;">  
+                    <input type="text" id="filename" style="display: none;">  
                     
                 </form>
-                <div class="horiform">
-                    <button class="boton-archivo" type="button" onclick="document.getElementById('id_docfile').click()" >Buscar</button>
-                </div>
-                <div class="horiform">
-                    <button class="boton-archivo" type="button" onclick="document.getElementById('check').click()" >Revisar</button>
-                </div>
+                
+                    <button class="boton-archivo" id="file_button" >Subir Archivo</button>
+               
+             
                     {% if headers is not None and content is not None %}
                         <div class="horiform">
-                            <button class="boton-archivo" type="submit"  onclick="document.getElementById('message_sending').click()">Continuar</button>
+                            <button class="boton-archivo" id="file_button" type="submit" >Continuar</button>
                         </div>
                     {% endif %}
     
                 
             </div>   
             
-            {% if headers is not None and content is not None %}
+          
                 <div id="lowcontainer">
                   
 
                     <div id="tablecontainer">
-                        <h3>{{ filename }}</h3>
-                        <table summary="Base de numeros">
-                            <tbody>
-                                    <tr>
-                                        {% for i in headers %}
-                                                <td class="header" scope="row">{{ i }}</td>
-                                        {% endfor %}
-                                    </tr>   
-                            
-                            
-                            {% for i in content %}
-                                {% if forloop.counter0|divisibleby:2 %}
-                                    <tr>
-                                        {% for j in i %}
-                                            <td class="par" scope="row">{{ j }}</td>
-                                        {% endfor %}
-                                    </tr>
-                                {% else %}
-                                        {% for j in i %}
-                                            <td class="impar" scope="row">{{ j }}</td>
-                                        {% endfor %}
-                                {% endif %}
-                                    
-                                </tr>   
-                            {% endfor %}
-                            </tbody>
-                        </table>
+                     
+                    
+                           
                         <div id="footer">
-                            <h4>{{ footer }}</h4>
+                           
                         </div>
                     </div>
                 </div>
-            {% else%} 
-                {% if filename is not None%}
+            
                 
                     <div id="nextform">
-                        <h3>{{ filename }}</h3>
+                        
                     </div>   
-                {% endif %}
                 
-            {% endif %}
-            
-   
         </div>
         {% endblock content %}
     </body>

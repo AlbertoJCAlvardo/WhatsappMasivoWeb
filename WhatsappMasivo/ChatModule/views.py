@@ -140,10 +140,11 @@ def chat_list(request):
     if request.method == 'GET':
         user = request.GET['user']
         page = request.GET['page']
-        
+        print(user, page)
         try:
             dm = DatabaseManager()
-            headers, conversations = dm.execute_query(f"""
+
+            query = f"""
                                                 SELECT V.CONVERSATION_ID, V.ORIGEN, TO_CHAR(V.FECHA, 'MM/DD/RRRR') FECHA, TO_CHAR(FECHA, 'HH24:MM') TIEMPO, V.USUARIO,
                                                     (SELECT COUNT(*) FROM WHATSAPP_MASIVO_RESPUESTA WHERE CONVERSATION_ID = V.CONVERSATION_ID AND STATUS='unread') UNREAD_MESSAGES,
                                                         CASE
@@ -159,15 +160,15 @@ def chat_list(request):
                                                     GROUP BY CONVERSATION_ID
                                                 ) B
                                                 ON V.CONVERSATION_ID = B.CONVERSATION_ID AND V.FECHA = START_DATE
-                                                WHERE V.USUARIO = '{user}' AND V.ID_RESPUESTA = B.ID_RESPUESTA
+                                                WHERE V.USUARIO = '{user}' 
                                                 ORDER BY FECHA ASC
                                                 OFFSET ({page} - 1)  * 10 ROWS
                                                 FETCH NEXT 10 ROWS ONLY 
 
-                                            """)
+                                            """
+            headers, conversations = dm.execute_query(query)
 
             conv_list = convert_query_dict(headers=headers, data=conversations)
-           
             return HttpResponse(json.dumps(conv_list), status=200)
         except Exception as e:
             print(repr(e))

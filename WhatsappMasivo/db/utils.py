@@ -53,11 +53,12 @@ class DatabaseManager:
             query = f"""
                         INSERT INTO 
                         CL.WHATSAPP_COMUNICATE
-                        (FECHA, USUARIO, DESTINO, MENSAJE, STATUS_ENVIO, TIPO_MENSAJE, NOMBRE_MENSAJE, ORIGEN, WAMID)
+                        (FECHA, USUARIO, DESTINO, MENSAJE, STATUS_ENVIO, TIPO_MENSAJE, NOMBRE_MENSAJE, ORIGEN, WAMID, CONTENIDO, TIPO)
 
                         VALUES (TO_DATE('{message_data['date']}', 'RRRR-MM-DD hh24:mi:ss'), '{message_data["user"]}',
                           '{message_data['destiny']}', '{message_data['message']}', '{message_data['status_envio']}', 
-                          '{message_data['type']}', '{message_data['message_name']}', '{message_data['origin']}', '{message_data['wamid']}')
+                          '{message_data['type']}', '{message_data['message_name']}', '{message_data['origin']}', '{message_data['wamid']}',
+                          '{message_data['content']}', '{message_data['tipo']}')
                     """
             
             result = database.execute(query)

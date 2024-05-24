@@ -5,7 +5,7 @@ function showMessageScreen(message){
     var nmessage = document.createElement('null');
 
     popup.innerHTML =  '<div class="popup-window"></div>'
-    nmessage.innerHTML = '<div class="loading-message"><p>'+message.toString()+'</p><p>\nIntente de nuevo</p></div>';
+    nmessage.innerHTML = '<div class="loading-message"><p>'+message.toString()+'</p></div>';
     
     maincontainer.appendChild(popup);
     
@@ -24,13 +24,14 @@ function showMessageScreen(message){
 function showLoadingScreen(){
     
     let maincontainer = document.body;
-    let popup = document.createElement('null')
-    let aux = document.createElement('null')
-    let nmessage = document.createElement('null');
-
-    aux.innerHTML = '<div  class="loader"></div>';
-    popup.innerHTML =  '<div class="popup-window" "></div>'
-    nmessage.innerHTML = '<div  class="loading-message"><p>Cargando...</p</div>';
+    let popup = document.createElement('div')
+    let aux = document.createElement('div')
+    let nmessage = document.createElement('div');
+    aux.classList.add("loader");
+    popup.classList.add("popup-window");
+    nmessage.classList.add("loading-message");
+    
+    nmessage.innerHTML = '<p>Cargando...</p';
     
     maincontainer.appendChild(popup);
     
@@ -39,7 +40,7 @@ function showLoadingScreen(){
     
     popup.classList.add('open-popup');
 
-    return [popup, aux, nmessage];
+    return popup;
 
 }
 function showLoadingScreenMessage(message){
@@ -49,7 +50,7 @@ function showLoadingScreenMessage(message){
     let aux = document.createElement('div')
     let nmessage = document.createElement('div');
     let p = document.createElement('p');
-    p.innerHTML(message);
+    p.innerHTML = message;
     nmessage.appendChild(p);
 
     aux.classList.add('loader');
@@ -69,9 +70,8 @@ function showLoadingScreenMessage(message){
 
 }
 function quitLoadingScreen(popup){
-
+    console.log(popup);
     let maincontainer = document.body;
-    popup.removeChild(aux);
     maincontainer.removeChild(popup);
     popup.classList.remove('open-popup');
 }

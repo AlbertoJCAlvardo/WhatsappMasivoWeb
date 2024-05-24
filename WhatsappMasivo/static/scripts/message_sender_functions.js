@@ -219,17 +219,17 @@ function format_template(){
 
     switch(switch_status){
         case 'text':
-            tempalte_header['format'] = 'TEXT';
+            template_header['format'] = 'TEXT';
             template_header['text'] = document.getElementById('message-header').value;
 
         break;
         case 'image':
-            tempalte_header['format'] = 'IMAGE';
-            template_header['image'] = up_img;
+            template_header['format'] = 'IMAGE';
+          
         break;
         case 'file':
             tempalte_header['format'] = 'DOCUMENT';
-            template_header['file'] = up_file;
+            
         break;
     }
     template_body['text'] = document.getElementById('message-body').value;
@@ -257,21 +257,39 @@ async function send_messages(){
     var template_name = "";
     var response = {};
     let file = "";
-    let message_resource_id = null;
-
+    let message_resource_id = null; 
+    let file_data = {};
+    switch(switch_status){
+        case 'image':
+            file_data = {
+                'data': up_img,
+                'name': fileName, 
+                'extension': extension
+            }
+        break;
+        case 'file':
+            file_data = {
+                'data': up_file,
+                'name': fileName, 
+                'extension': extension
+            }
+        break;
+    }
 
     await axios.post('/register_template/', {
         message:{'components': components,
                   'type': switch_mode,
                   'buttons': button_list.length
                 },
-        df: df
+        df: df,
+        file_data: file_data
     }).then(function (response){
         response = response['data'];
         console.log(response);
         status = response['status'];
  
         template_name = response['template_name'];
+        display_id = response['display_ids']
         if(response['type'] != 'text'){
             message_resource_id = response['resource_id']; 
         }
@@ -292,7 +310,7 @@ async function send_messages(){
                quitLoadingScreen(popup);
             }, 5000)
     });
-   
+    
 
     if(status == 200){
         console.log('\nPrueba: ', response);
@@ -301,7 +319,8 @@ async function send_messages(){
             template_name:template_name,
             message:{'components': components,
                   'type': switch_mode,
-                  'buttons': button_list.length
+                  'buttons': button_list.length,
+
                 },
             user: document.getElementById('user').value,
             from_number:document.get
@@ -424,6 +443,12 @@ function switch_btn(){
             
             const  file = event.target.files[0];
             if(file){
+                const name = file.name;
+                const lastDot = name.lastIndexOf('.');
+                const fileName = name.substring(0, lastDot);
+                const ext = name.substring(lastDot + 1);
+                outputfile = fileName;
+                extension = ext;
                 up_img = file;
                 let file_info = document.createElement('div');
                 file_info.classList.add('uploaded-image');
@@ -469,6 +494,10 @@ function switch_btn(){
             let hdr_iframe = document.createElement('iframe');
             const  file = event.target.files[0];
             if(file){
+                const name = file.name;
+                const lastDot = name.lastIndexOf('.');
+                const fileName = name.substring(0, lastDot);
+                const ext = name.substring(lastDot + 1);
                 up_file = file;
                getFileNameWithExt(event);
                 message_header_cont.innerHTML = ""; 

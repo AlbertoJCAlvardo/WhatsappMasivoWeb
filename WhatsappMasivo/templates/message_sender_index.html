@@ -16,14 +16,17 @@
             {% block content %}
             <div id="headerbar">
                 <div id="contlogo">
-                    <img id= "logo" src="{% static 'logo.png' %}">
+                    <img id= "logo" src="{% static 'images/edilar_transparente.png' %}">
                 </div>
-
+    
                 <div id="header"><p>Whatsapp Masivo</p></div>    
+                
                 {% if user_name is not None %}
                 <div id="nombre"><p>{{ user_name }}</p></div>
                 {% endif %}
+                
             </div>
+           
             <div id="sidebar">
                 {% include 'bar_menu.html' with user=user session_id=session_id%}
             </div>

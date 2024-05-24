@@ -20,10 +20,9 @@ import pytz
 # Create your views here.
 
 @csrf_exempt
-def index(request, **kwargs):
-    id = kwargs['id']
-    print(id)
-    context = {'id': id}
+def index(request):
+    
+    context = {}
     return HttpResponse(render_to_string('main.html', context=context))
 
 @csrf_exempt
@@ -70,6 +69,52 @@ def login(request):
             print(repr(e))
             return HttpResponse(json.dumps({'message':'Error en el servidor'}))
 
+
+@csrf_exempt
+def format_table(request):
+    
+    if request.method == 'POST' and request.FILES['file'] is not None:
+        print('request')
+        try:
+            file_data = request.FILES['file']
+            extension = str(file_data).split('.')[1]
+            footer = ""
+            df = None
+
+            if extension == 'xlsx':
+                df = pd.read_excel(file_data)
+            if extension == 'csv':
+                df = pd.read_csv(file_data)
+
+            content = df.iloc[:, :].values.tolist()
+
+            if len(list(df.iloc[:, [0]].values)) > 10:
+                print('logintud mayoer a 10')
+                footer = f"Ejemplo demostrativo, 10 celdas de {len(content)}"
+                content = df.iloc[0:10, :].values.tolist()
+            print(len(list(df.iloc[:,[0]].values)))
+           
+            
+            response = {
+                        'footer':footer,
+                        'headers':df.columns.to_list(),
+                        'content':content,
+                        'df':df.to_json()  
+                }
+            response = json.dumps(response)
+            return HttpResponse(response, status=200)
+
+           
+            
+        except Exception as e:
+            print(repr(e))
+            response = json.dumps({
+                'error': repr(e),
+                'status': 400
+            })
+            return HttpResponse(response, status=400)
+        
+
 @csrf_exempt
 def data_upload(request):
     try:
@@ -78,9 +123,9 @@ def data_upload(request):
             print('hola -.-')
             sesion_id = request.GET.get('session_id', None)
             user = request.GET.get('user', None)
-            print(user, sesion_id)
-            if validate_session(sesion_id) and validate_user(user):
-                print(user)
+            if True:
+            #if validate_session(sesion_id) and validate_user(user):
+                
                 context = {'user':user, 
                            'session_id':sesion_id,
                            'user_name':get_user_name(user),
@@ -156,7 +201,8 @@ def message_sending(request):
             filename = request.POST.get('filename', None)
             df = request.POST.get('df', None)
             user = request.POST.get('user', None)
-            print(user)
+            
+            print(user,filename)
             if df is not None:
                 
                 df = pd.read_json(df)
@@ -175,7 +221,7 @@ def message_sending(request):
         else:
             return HttpResponseRedirect('/data_upload/')
     except Exception as e:
-        
+        print(repr(e))
         return HttpResponseBadRequest(f'{repr(e)}')
     
 @csrf_exempt
@@ -208,20 +254,66 @@ def template_registry(request):
             df = body['df']
             df = pd.read_json(df)
 
-            formatted_header, tokens_header = set_wa_format(message=message['header'], data=df.iloc[0])
+            pre_component_dic = {}
+            pre_components = body['components']
+            header_type = body['type']
 
+            for i in pre_components:
+                pre_component_dic[i['type']] = i
 
-            formatted_body, tokens_body = set_wa_format(message=message['body'], data=df.iloc[0])
-            
-
-
-
+            if header_type != 'text':
+                ar = ""
+                if header_type == 'file':
+                    file_data = body['file_data']
+                    nme = file_data['name']
+                    data = file_data['data']
+                    extension = file_data['extension']
+                    
+                    
+                    
+                    mime = ""
+                    if extension in ("jpeg", 'jpg', 'png'):
+                        mime = f'image/{extension}'
+                    elif extension in ("mp4"):
+                        mime = f'video/{extension}'
+                    else:   
+                        mime = f'document/{extension}'
                 
-            template_name, response =  asyncio.run(register_template({'header':formatted_header,
-                                                                      'body':formatted_body,
-                                                                      'footer':message['footer']}, 
-                                                                      data={'header_data':df[list(tokens_header.keys())],
-                                                                            'body_data':df[list(tokens_body.keys())]}))
+                    file_data = {'mime':mime,
+                                'length': len(data),
+                                'data': data,
+                                'name': nme}
+                        
+                    permision = asyncio.run(get_upload_permission(file_data))
+                    resource_id = asyncio.run(upload_file_api(permision, file_data))
+                    
+                    display_id = asyncio.run(upload_file_api_2(file_data))
+
+                    response['resource_id'] = resource_id
+                    response['display_id'] = display_id
+
+                    pre_component_dic['HEADER']['example'] = {
+                        'header_handle': permision
+                    }
+                    
+            else:
+                header_text= pre_component_dic['HEADER']['text']
+                formatted_header, tokens_header = set_wa_format(message=header_text, data=df.iloc[0])
+                pre_component_dic['HEADER']['text'] = formatted_header
+                pre_component_dic['HEADER']['example'] = {
+                    'header_text':get_components(df.iloc[:, tokens_header])
+                }
+
+            body_message = pre_component_dic['BODY']['text']
+            formatted_body, tokens_body = set_wa_format(message=body_message, data=df.iloc[0])
+            pre_component_dic['BODY']['text'] = formatted_body
+            pre_component_dic['BODY']['example'] = {
+                                'body_text': get_components(df.iloc[:, tokens_body])
+                            }
+            components = []
+            for i in pre_component_dic.keys():
+                components.append(i)
+            template_name, response =  asyncio.run(register_template(components))
             if 'error' not in response.keys():
                 status = response['status']
                
@@ -232,14 +324,14 @@ def template_registry(request):
                         break
                     
                     status = asyncio.run(check_template_status(template_name=template_name))
-                response = {
-                    'status':400,
-                    'template_name':template_name
-                    }                         
+                response['status'] = 400
+                response['template_name'] = template_name
+                                  
                 if status == 'APPROVED':
                     response['status'] = 200
                     response['tokens'] = {'tokens_header': tokens_header, 
                                           'tokens_body': tokens_body}
+                    
                 if status == 'REJECTED':
                     removed = asyncio.run(remove_rejected_template(template_name=template_name))
                 return HttpResponse(json.dumps(response))
@@ -272,17 +364,45 @@ def send_messages(request):
         if request.method == "POST":
         
             body = json.loads(request.body.decode('utf-8'))
-            print('\n\nenviando...',repr_dic(body))
-           
-            template_name = body['template_name']
-            message_dic = body['message_dic']
+            message = body['message']
             df = body['df']
             df = pd.read_json(df)
+            template_name = body['template_name']
+            pre_component_dic = {}
+            component_dic = {}
+
+            pre_components = body['components']
+            header_type = body['type']
+
+            for i in pre_components:
+                pre_component_dic[i['type']] = i
+                component_dic[i['type']] = {
+                    'type': i['type']
+                }
+
+            if header_type != 'text':
+                ar = ""
+                if header_type == 'file':
+                    display_id = body['display_id']
+                    component_dic['HEADER']['parameters'] = [{
+                        'type': 'DOCUMENT',
+                        'document': {'id':display_id}
+                    }]
+
+                   
+
+                if header_type == 'image':
+                    display_id = body['display_id']
+                    component_dic['HEADER']['parameters'] = [{
+                        'type': 'IMAGE',
+                        'image': {'id':display_id}
+                    }]
+
+                pre_component_dic['HEADER']['display_id'] = display_id
+
+            body_message = pre_component_dic['BODY']['text']
+            formatted_body, tokens_body = set_wa_format(message=body_message, data=df.iloc[0])
             
-            message = body['message']
-            
-            formatted_header, tokens_header = set_wa_format(message=message_dic['header'], data=df.iloc[0])
-            formatted_body, tokens_body = set_wa_format(message=message_dic['body'], data=df.iloc[0])
 
             db = DatabaseManager()
             
@@ -296,14 +416,39 @@ def send_messages(request):
                 
                 if row['NUMERO_TELEFONO'] in numeros_validos:
                     
+            
+                    if header_type == 'text':
+                        header_message = pre_component_dic['HEADER']['text']
+                        formatted_header, tokens_header = set_wa_format(message=header_message, data=df.iloc[0])
+                        header_parameters = []
+                        pre_component_dic['HEADER']['content'] = formatted_header
+                        for parameter in row.loc[tokens_header.keys()]:
+                            header_parameters.append({
+                                'type': 'text',
+                                'text': str(parameter)
+                            })
+
+                        component_dic['BODY']['parameters'] = body_parameters
+
+                    formatted_body, tokens_body = set_wa_format(message=body_message, data=df.iloc[0])
+                    body_parameters = []
+
+                    for parameter in row.loc[tokens_body.keys()]:
+                        body_parameters.append({
+                            'type': 'text',
+                            'text': str(parameter)
+                        })
+
+                    component_dic['BODY']['parameters'] = body_parameters
+
+                    components  = [component_dic['HEADER'], component_dic['BODY']]
+                    
                     
                     
                     response = asyncio.run(send_message( 
                                                         numeros[row['NUMERO_TELEFONO']].replace('+', ''),
                                                         template_name=template_name, 
-                                                        data={'header': list(row.loc[tokens_header.keys()].values),
-                                                              'body': list(row.loc[tokens_body.keys()].values)
-                                                              }))
+                                                        components=components))
                     print('\n\nresponse: \n',repr_dic(response))
                     
                     m_status = 'error'
@@ -317,6 +462,7 @@ def send_messages(request):
                             counter += 1
                         wamid = messages['id']
                         
+                    
                     r_body = {'body': format_string(message, row)}
                     
                     db.insert_message_registry(message_data={
@@ -328,7 +474,9 @@ def send_messages(request):
                         'type':'template',
                         'message_name':template_name,
                         'origin': settings.WHATSAPP_NUMBER,
-                        'wamid':wamid
+                        'wamid':wamid,
+                        'content': json.dumps(pre_component_dic),
+                        'tipo': header_type
                     })
                     
                     
@@ -389,10 +537,15 @@ def upload_file(request):
 
 
                 
-               #permision = asyncio.run(get_upload_permission(file_data))
-
+                permision = asyncio.run(get_upload_permission(file_data))
+                resource_id = asyncio.run(upload_file_api(permision, file_data))
                 
-                response = asyncio.run(upload_file_api_2(file_data ))
+                display_id = asyncio.run(upload_file_api_2(file_data))
+
+                response = {
+                    'resource_id': resource_id,
+                    'display_id': display_id
+                }
 
                 print(response)
 
@@ -407,3 +560,20 @@ def upload_file(request):
 def file_test(request):
     context = {}
     return HttpResponse(render_to_string('file_test.html', context=context))
+
+@csrf_exempt
+def send_text_message(request):
+
+    if request.type == 'POST':
+        try:
+            response = json.dumps({
+                'status': 'ok'
+            })
+            return HttpResponse(response, status=200)
+        
+        except Exception as e:
+            print(repr(e))
+            response = json.dumps({
+                'error': repr(error)
+            })
+            return HttpResponse(response, status=400)

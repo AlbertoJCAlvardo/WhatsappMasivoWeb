@@ -6,12 +6,13 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Chat</title>
         {% load static %}
-        <link rel="stylesheet" href="{%  static 'styles/style.css' %}">
         <link rel="stylesheet" href="{%  static 'styles/chat_style.css' %}">
+        <link rel="stylesheet" href="{%  static 'styles/style.css' %}">
         <link rel="stylesheet" href="{%  static 'styles/navbarstyle.css' %}">
 
         <link rel="shortcut icon" href="{% static 'logo.ico' %}" type="image/x-icon">
         <script src="{% static 'scripts/chat/chat_utils.js' %}">  </script>
+        <script src="{% static 'scripts/utils.js' %}">  </script>
         <script type = "module" src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"> </script>
         <script  type="module" src="{% static 'scripts/chat/chat_window.js' %}">  </script>
         -<script  type="module" src="{% static 'scripts/chat/contact_chat.js' %}">  </script>
@@ -21,10 +22,10 @@
         <div id="maincontainer">
             <div id="headerbar">
                 <div id="contlogo">
-                    <img id= "logo" src="{% static 'logo.png' %}">
+                    <img id= "logo" src="{% static 'images/edilar_transparente.png' %}">
                 </div>
                 <div id="header"><p>Whatsapp Masivo</p></div>    
-                <div id="nombre"><p>{{ user }}</p></div>
+                <div id="nombre"><p>{{ name }}</p></div>
             </div>
             <div id="sidebar">
                 {% include 'bar_menu.html' with user=user%}
@@ -34,7 +35,7 @@
                 
                 <div class="container">
                     <div class="leftSide">
-                        <!-- Header -->
+                    
                         <div class="header-wa">
                             
                             <ul class="nav_icons">
@@ -44,14 +45,13 @@
                             </ul>
                         </div>
                         
-                        <!-- Search Chat -->
                         <div class="search_chat">
                             <div>
                                 <input type="text" placeholder="Search or start new chat">
                                 <ion-icon name="search-outline"></ion-icon> 
                             </div>                
                         </div>
-                        <!-- CHAT LIST -->
+
                         <div class="chatlist" id="chat_list">
                             
                         </div>
@@ -74,11 +74,12 @@
                         </div>
                         
                         <!-- CHAT INPUT -->
-                        <div class="chat_input">
+                        <div class="chat_input" style="display: none;" id="chinput">
                             <ion-icon name="happy-outline"></ion-icon>
                             <!-- <ion-icon name="happy-outline"></ion-icon> -->
-                            <input type="text" placeholder="Type a message">
-                            <ion-icon name="mic"></ion-icon>
+                            <input type="text" id="message_input" placeholder="Escribe un mensaje">
+                            <button id="send_button" class="snd"> 
+                            </button>
                         </div>
                     </div>
                 </div>

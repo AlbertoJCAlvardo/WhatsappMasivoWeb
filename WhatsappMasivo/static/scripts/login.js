@@ -1,12 +1,36 @@
 var button_ingresar = document.getElementById('btn-ingresar');
-
 document.addEventListener('keypress', function(event){
     if(event.key === "Enter"){
-        console.log
+        console.log('Presionaron enter :D');
         validateLogin();
     }
 });
+document.addEventListener('change', (event) => {
+    catchAutocompetion();
+});
+document.addEventListener('load', (event) => {
+    catchAutocompetion();
+});
+window.onload = (event) =>{
+    catchAutocompetion();
+}
 
+
+function catchAutocompetion(){
+    const userbox = document.getElementById('user');
+    const passwordbox = document.getElementById('password')
+    const user = document.getElementById('user').value.toUpperCase();
+    const password = document.getElementById('password').value;
+   
+    if(user != "" ){
+        userbox.removeAttribute('placeholder');
+        $('#spanuser').hide();
+    }
+    if(password != "" ){
+        passwordbox.removeAttribute('placeholder');
+        $('#spanpassword').hide();
+    }
+}
 
 
 async function validateLogin(){
@@ -17,7 +41,7 @@ async function validateLogin(){
         showMessageScreen('Sin usuario y/o contraseña');
     }
     else{
-        elements = showLoadingScreen();
+       let popup = showLoadingScreen();
         console.log(user, password);
         await axios.post('/login/', {
                     'user':user,
@@ -25,7 +49,7 @@ async function validateLogin(){
 
             
         }).then(function (response){
-            quitLoadingScreen(elements[0], elements[1], elements[2]);
+            quitLoadingScreen(popup);
             
             
             response = response['data'];
@@ -42,7 +66,7 @@ async function validateLogin(){
         })
         .catch(function (error){
             console.log(error);
-            quitLoadingScreen(elements[0], elements[1], elements[2]);
+            quitLoadingScreen(popup);
         });
         
     }
