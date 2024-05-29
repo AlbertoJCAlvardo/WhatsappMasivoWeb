@@ -1,7 +1,11 @@
 node_modules
 env
+.sass-cache
 WhatsappMasivo/.env
 yarn.lock
 main.css
 package.json
 .gitignore
+q
+.vscode
+
