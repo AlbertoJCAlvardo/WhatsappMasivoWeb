@@ -135,7 +135,7 @@ function addZero(i) {
         const url_pattern = RegExp(urlexp);
         const spaces_regex = RegExp('[  ]+');
         let button_text = document.getElementById('button-text');
-        let button_link = document.getElementById('button-text');
+        let button_link = document.getElementById('button-link');
         console.log(spaces_regex.exec(button_text.value));
         console.log(spaces_regex.exec(button_link.value));
         console.log(url_pattern.exec(button_link.value));
@@ -146,7 +146,7 @@ function addZero(i) {
             visual_btn.classList.add('visual-button');
             visual_btn.innerHTML = "<p>"+button_text.value+"<p/>"
             chat_message.appendChild(visual_btn);
-            button_list.push({'text':button_text.value, 'link':button_link.value, 'type':'URL'});
+            button_list.push({'text':button_text.value, 'url':button_link.value, 'type':'URL'});
 
             popup.innerHTML = "";
             popup.classList.remove('open-popup');
