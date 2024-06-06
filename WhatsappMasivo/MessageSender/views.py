@@ -252,67 +252,60 @@ def template_registry(request):
             body = json.loads(request.body.decode('utf-8'))
             message = body['message']
             df = body['df']
+            print(type(df), df)
             df = pd.read_json(df)
 
             pre_component_dic = {}
-            pre_components = body['components']
-            header_type = body['type']
+            pre_components = message['components']
+            header_type = message['type']
+            file_data =  body['file_data']
 
             for i in pre_components:
-                pre_component_dic[i['type']] = i
+                print(i)
+                if i != None:
+                    print(i, type(i))
+                    if type(i) == 'str':
+                        i = json.loads(i)
+                    print(i['type'])
+                    pre_component_dic[i['type']] = i
 
+            tokens_header = {}
             if header_type != 'text':
-                ar = ""
-                if header_type == 'file':
-                    file_data = body['file_data']
-                    nme = file_data['name']
-                    data = file_data['data']
-                    extension = file_data['extension']
-                    
-                    
-                    
-                    mime = ""
-                    if extension in ("jpeg", 'jpg', 'png'):
-                        mime = f'image/{extension}'
-                    elif extension in ("mp4"):
-                        mime = f'video/{extension}'
-                    else:   
-                        mime = f'document/{extension}'
                 
-                    file_data = {'mime':mime,
-                                'length': len(data),
-                                'data': data,
-                                'name': nme}
-                        
-                    permision = asyncio.run(get_upload_permission(file_data))
-                    resource_id = asyncio.run(upload_file_api(permision, file_data))
-                    
-                    display_id = asyncio.run(upload_file_api_2(file_data))
+                permisions = file_data['permisions']
 
-                    response['resource_id'] = resource_id
-                    response['display_id'] = display_id
-
-                    pre_component_dic['HEADER']['example'] = {
-                        'header_handle': permision
-                    }
-                    
+                pre_component_dic['HEADER']['example'] = {
+                    'header_handle': permisions['resource_id']
+                }
+                
             else:
+                
                 header_text= pre_component_dic['HEADER']['text']
                 formatted_header, tokens_header = set_wa_format(message=header_text, data=df.iloc[0])
+                
                 pre_component_dic['HEADER']['text'] = formatted_header
-                pre_component_dic['HEADER']['example'] = {
-                    'header_text':get_components(df.iloc[:, tokens_header])
-                }
-
+                if len(list(tokens_header.keys())) > 0:
+                    pre_component_dic['HEADER']['example'] = {
+                        'header_text':get_components(df[list(tokens_header.keys())])
+                    }
+               
             body_message = pre_component_dic['BODY']['text']
             formatted_body, tokens_body = set_wa_format(message=body_message, data=df.iloc[0])
+
+            print('fbody: ',formatted_body)
             pre_component_dic['BODY']['text'] = formatted_body
-            pre_component_dic['BODY']['example'] = {
-                                'body_text': get_components(df.iloc[:, tokens_body])
-                            }
+
+            if len(list(tokens_body.keys())) > 0:
+                pre_component_dic['BODY']['example'] = {
+                                    'body_text': get_components(df[list(tokens_body.keys())])
+                                }
+            
+
             components = []
             for i in pre_component_dic.keys():
-                components.append(i)
+                print(i)
+                components.append(pre_component_dic[i])
+            print(f'Intentando registrar {components}')
             template_name, response =  asyncio.run(register_template(components))
             if 'error' not in response.keys():
                 status = response['status']
@@ -334,6 +327,7 @@ def template_registry(request):
                     
                 if status == 'REJECTED':
                     removed = asyncio.run(remove_rejected_template(template_name=template_name))
+                    print('REJECTED')
                 return HttpResponse(json.dumps(response))
             
             error = response['error']
@@ -358,49 +352,59 @@ def template_registry(request):
 
 
 @csrf_exempt
+def get_file_authorization(request):
+    if request.method == 'POST':
+        body = json.loads(request.body.decode('utf-8'))
+
+
+@csrf_exempt
 def send_messages(request):
     try:
             
         if request.method == "POST":
         
             body = json.loads(request.body.decode('utf-8'))
+           
             message = body['message']
             df = body['df']
             df = pd.read_json(df)
             template_name = body['template_name']
             pre_component_dic = {}
             component_dic = {}
-
-            pre_components = body['components']
-            header_type = body['type']
-
+            print(message)
+            pre_components = message['components']
+            header_type = message['type']
+            file_data = body['file_data']
             for i in pre_components:
-                pre_component_dic[i['type']] = i
-                component_dic[i['type']] = {
-                    'type': i['type']
-                }
+                if i:
+                    pre_component_dic[i['type']] = i
+                    component_dic[i['type']] = {
+                        'type': i['type']
+                    }
 
             if header_type != 'text':
                 ar = ""
                 if header_type == 'file':
-                    display_id = body['display_id']
+                  
+                    permisions = file_data['permisions']
                     component_dic['HEADER']['parameters'] = [{
                         'type': 'DOCUMENT',
-                        'document': {'id':display_id}
+                        'document': {'id':permisions['display_id']}
                     }]
-
+                    pre_component_dic['HEADER']['display_id'] = permisions['display_id']
                    
 
                 if header_type == 'image':
-                    display_id = body['display_id']
+                    permisions = file_data['permisions']
                     component_dic['HEADER']['parameters'] = [{
                         'type': 'IMAGE',
-                        'image': {'id':display_id}
+                        'image': {'id':permisions['display_id']}
                     }]
 
-                pre_component_dic['HEADER']['display_id'] = display_id
-
+                    pre_component_dic['HEADER']['display_id'] = permisions['display_id']
+           
             body_message = pre_component_dic['BODY']['text']
+            
             formatted_body, tokens_body = set_wa_format(message=body_message, data=df.iloc[0])
             
 
@@ -421,6 +425,7 @@ def send_messages(request):
                         header_message = pre_component_dic['HEADER']['text']
                         formatted_header, tokens_header = set_wa_format(message=header_message, data=df.iloc[0])
                         header_parameters = []
+                        
                         pre_component_dic['HEADER']['content'] = formatted_header
                         for parameter in row.loc[tokens_header.keys()]:
                             header_parameters.append({
@@ -428,8 +433,7 @@ def send_messages(request):
                                 'text': str(parameter)
                             })
 
-                        component_dic['BODY']['parameters'] = body_parameters
-
+                      
                     formatted_body, tokens_body = set_wa_format(message=body_message, data=df.iloc[0])
                     body_parameters = []
 
@@ -441,6 +445,7 @@ def send_messages(request):
 
                     component_dic['BODY']['parameters'] = body_parameters
 
+                    
                     components  = [component_dic['HEADER'], component_dic['BODY']]
                     
                     
@@ -462,9 +467,9 @@ def send_messages(request):
                             counter += 1
                         wamid = messages['id']
                         
-                    
-                    r_body = {'body': format_string(message, row)}
-                    
+                    print('message: ', message)
+                    r_body = json.dumps(message)
+                    print('insertando en la base de datos...')
                     db.insert_message_registry(message_data={
                         'date':datetime.now(pytz.timezone("Mexico/General")).strftime("%Y-%m-%d %H:%M:%S"),
                         'user':get_user_name(body['user']),
@@ -508,6 +513,7 @@ def upload_file(request):
            
             
             ar = request.FILES.get('file', None)
+            
             if request.FILES.get('file') != None:
                 
                 ar = request.FILES['file']
@@ -517,7 +523,7 @@ def upload_file(request):
                 
                 for filename, file in request.FILES.items():
                     nme = request.FILES[filename].name
-                    print(file.read())
+                    
                     name = filename
                 
                 mime = ""
@@ -526,32 +532,34 @@ def upload_file(request):
                 elif extension in ("mp4"):
                     mime = f'video/{extension}'
                 else:   
-                    mime = f'document/{extension}'
+                    mime = f'application/{extension}'
                
                 
                 file_data = {'mime':mime,
                              'length': len(data),
                              'data': data,
                              'name': nme}
-                
+               
 
 
                 
                 permision = asyncio.run(get_upload_permission(file_data))
-                resource_id = asyncio.run(upload_file_api(permision, file_data))
+               
+                resource_id = asyncio.run(upload_file_api(permision['id'], file_data))
                 
                 display_id = asyncio.run(upload_file_api_2(file_data))
-
+                display_id = json.loads(display_id)
                 response = {
                     'resource_id': resource_id,
-                    'display_id': display_id
+                    'display_id': display_id['id'],
+                    'permision': permision
                 }
 
-                print(response)
+            
 
-                return HttpResponse(json.dumps({'status':'ok', 'response':response}))
+                return HttpResponse(json.dumps({'status':'ok', 'permisions':response}))
 
-            return HttpResponse(json.dumps({'status':'error', 'error':permision.error}))
+            return HttpResponse(json.dumps({'status':'error', 'error':'Error'}))
         except Exception as e:
             print(repr(e))
             return HttpResponse(json.dumps({'status': 'error', 'error':repr(e)}))
@@ -574,6 +582,6 @@ def send_text_message(request):
         except Exception as e:
             print(repr(e))
             response = json.dumps({
-                'error': repr(error)
+                'error': repr(e)
             })
             return HttpResponse(response, status=400)

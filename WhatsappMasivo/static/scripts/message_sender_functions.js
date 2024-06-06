@@ -1,6 +1,6 @@
 var selected_item;
 let button_list = [];
-
+let df
 
 function add_column(){
     let text_area = selected_item;
@@ -214,9 +214,9 @@ function format_template(){
 
     template_header['type'] = 'HEADER';
     template_body['type'] = 'BODY';
-    template_body['footer'] = 'FOOTER';
+    template_footer['type'] = 'FOOTER';
 
-
+    
     switch(switch_status){
         case 'text':
             template_header['format'] = 'TEXT';
@@ -228,11 +228,12 @@ function format_template(){
           
         break;
         case 'file':
-            tempalte_header['format'] = 'DOCUMENT';
+            template_header['format'] = 'DOCUMENT';
             
         break;
     }
     template_body['text'] = document.getElementById('message-body').value;
+
     template_footer['text'] = document.getElementById('message-footer').value;
 
     if(button_list.length > 0){
@@ -242,13 +243,17 @@ function format_template(){
 
     components = [template_header,
                   template_body,
-                  template_body,
+                  template_footer,
                   template_buttons
                 ]
     return components;
 }   
 async function send_messages(){
-    const from_number = document.getElementById('')
+    const from_number_text = document.getElementById('number-select').value;
+    let from_number_dic = {
+
+    }
+    
     const components = format_template();
     let popup = showLoadingScreenMessage('Esperando la autorización de Meta');
         
@@ -256,98 +261,143 @@ async function send_messages(){
     var status = 0;
     var template_name = "";
     var response = {};
-    let file = "";
+    let file;
     let message_resource_id = null; 
     let file_data = {};
+
+    
     switch(switch_status){
         case 'image':
+          
             file_data = {
                 'data': up_img,
                 'name': fileName, 
                 'extension': extension
             }
+            file = up_img;
         break;
         case 'file':
+ 
             file_data = {
                 'data': up_file,
                 'name': fileName, 
                 'extension': extension
             }
+            file = up_file;
         break;
     }
 
-    await axios.post('/register_template/', {
-        message:{'components': components,
-                  'type': switch_mode,
-                  'buttons': button_list.length
-                },
-        df: df,
-        file_data: file_data
-    }).then(function (response){
-        response = response['data'];
-        console.log(response);
-        status = response['status'];
- 
-        template_name = response['template_name'];
-        display_id = response['display_ids']
-        if(response['type'] != 'text'){
-            message_resource_id = response['resource_id']; 
-        }
-        if (status !== 200){
-            popup.removeChild(message);
-            quitLoadingScreen(popup);
-            if(status !== 400){
-                popup = showLoadingScreenMessage('Fallo en el registro de mensajes<br>\n error: '+processText(response['error']));
-            }
-            setTimeout(function(){
-                quitLoadingScreen(popup);
-            }, 5000);
-        }
-       
-    })
-    .catch(function (error){
-       setTimeout(function(){
-               quitLoadingScreen(popup);
-            }, 5000)
-    });
-    
+    var file_switch = 1;
 
-    if(status == 200){
-        console.log('\nPrueba: ', response);
-        message.innerHTML = '<div class="loading-message">Mensaje autorizado, enviando mensajes</div>';
-        await axios.post('/send_messages/', {
-            template_name:template_name,
-            message:{'components': components,
-                  'type': switch_mode,
-                  'buttons': button_list.length,
+    if(switch_status != 'text'){
+        var formData = new FormData();
+        formData.append('file', file);
 
-                },
-            user: document.getElementById('user').value,
-            from_number:document.get
-        })
-        .then(function (response){
+        await axios.post('/upload_file/', formData,
+            {headers: {'Content-Type':'multipart/form-data'}}
+        ).then((response) => {
             response = response['data'];
+            console.log('Uploaded file')
             console.log(response);
-            popup.removeChild(message);
-            popup = showLoadingScreenMessage('Mensajes enviados!<br>Total:'+response.message_count);
-            
-            if(response.status !== 200){
-                quitLoadingScreen(popup);
-                popup = showLoadingScreenMessage('loading-message">Fallo enviando los mensajes'+response.error)
-                message.innerHTML = '<div class="loading-message">Fallo enviando los mensajes'+response.error+'</div>';
+            file_data['permisions'] = response['permisions'];
+
+            if(response['status']  !== 'ok'){
+                file_switch = 0;
+            } 
+        }).catch((error)=>{
+            console.log(error);
+            file_switch = 0;
+        })
+    }
+    if(file_switch == 1){
+        console.log('Registrando el template');
+        await axios.post('/register_template/', 
+            { 
+                message:{'components': components,
+                        'type': switch_status,
+                        'buttons': button_list.length
+                        },
+                df: df,
+                file_data: file_data 
             }
-            popup.appendChild(message)
-            setTimeout(function(){
+            ).then(function (response){
+            response = response['data'];
+            
+            status = response['status'];
+            console.log(status);
+            template_name = response['template_name'];
+            display_id = response['display_ids']
+            if(response['type'] != 'text'){
+                message_resource_id = response['resource_id']; 
+                
+            }
+            if (status !== 200){
+                
                 quitLoadingScreen(popup);
-            }, 3000);
-    
+                if(status !== 400){
+                    popup = showLoadingScreenMessage('Fallo en el registro de mensajes<br>\n error: '+processText(response['error']));
+                }
+                else{
+                    popup = showLoadingScreenMessage('Fallo en el registro de mensajes');
+                }
+                setTimeout(function(){
+                    quitLoadingScreen(popup);
+                }, 5000);
+            }
+            
+        
         })
         .catch(function (error){
-            quitLoadingScreen(popup);
-                popup = showLoadingScreenMessage('loading-message">Fallo enviando los mensajes'+error);
+        setTimeout(function(){
                 quitLoadingScreen(popup);
-        }); 
+                }, 5000)
+        });
+        if(status == 200){
+            console.log('Enviando Mensajes')
+            console.log('\nPrueba: ', response);
+            message.innerHTML = '<div class="loading-message">Mensaje autorizado, enviando mensajes</div>';
+            await axios.post('/send_messages/', {
+                df: df,
+                template_name:template_name,
+                message:{'components': components,
+                    'type': switch_status,
+                    'buttons': button_list.length,
+
+                    },
+                user: document.getElementById('user').value,
+                from_number:document.get,
+                file_data: file_data
+            })
+            .then(function (response){
+                response = response['data'];
+                console.log(response);
+                popup.removeChild(message);
+                popup = showLoadingScreenMessage('Mensajes enviados!<br>Total:'+response.message_count);
+                
+                if(response.status !== 200){
+                    quitLoadingScreen(popup);
+                    popup = showLoadingScreenMessage('loading-message">Fallo enviando los mensajes'+response.error)
+                    message.innerHTML = '<div class="loading-message">Fallo enviando los mensajes'+response.error+'</div>';
+                }
+                popup.appendChild(message)
+                setTimeout(function(){
+                    quitLoadingScreen(popup);
+                }, 3000);
+        
+            })
+            .catch(function (error){
+                quitLoadingScreen(popup);
+                    popup = showLoadingScreenMessage('loading-message">Fallo enviando los mensajes'+error);
+                    quitLoadingScreen(popup);
+            }); 
+        }
     }
+    else{
+        quitLoadingScreen(popup);
+        showMessageScreen('Error en la subida del archivo');
+    }
+
+   
    
     
     
@@ -373,6 +423,7 @@ let up_img;
 let up_file;
 let outputfile;
 let extension;
+let fileName;
 
 function getFileNameWithExt(event) {
 
@@ -381,7 +432,7 @@ function getFileNameWithExt(event) {
     }
     const name = event.target.files[0].name;
     const lastDot = name.lastIndexOf('.');
-    const fileName = name.substring(0, lastDot);
+    fileName = name.substring(0, lastDot);
     const ext = name.substring(lastDot + 1);
     outputfile = fileName;
     extension = ext;
@@ -392,7 +443,7 @@ window.onload = function(){
     up_file = null;
     up_img = null;
     message_header_cont = document.getElementById('message-header-cont');
-    
+    df = document.getElementById('test').value;
     img_button = document.getElementById('img-button');
 
     file_button = document.getElementById('file-button');
@@ -441,15 +492,16 @@ function switch_btn(){
             console.log('aaaa');
             let hdr_img = document.createElement('img');
             
-            const  file = event.target.files[0];
+            let  file = event.target.files[0];
             if(file){
+                up_img = file;
                 const name = file.name;
                 const lastDot = name.lastIndexOf('.');
-                const fileName = name.substring(0, lastDot);
+                fileName = name.substring(0, lastDot);
                 const ext = name.substring(lastDot + 1);
                 outputfile = fileName;
                 extension = ext;
-                up_img = file;
+                
                 let file_info = document.createElement('div');
                 file_info.classList.add('uploaded-image');
                 message_header_cont.innerHTML = ""; 
@@ -496,7 +548,7 @@ function switch_btn(){
             if(file){
                 const name = file.name;
                 const lastDot = name.lastIndexOf('.');
-                const fileName = name.substring(0, lastDot);
+                fileName = name.substring(0, lastDot);
                 const ext = name.substring(lastDot + 1);
                 up_file = file;
                getFileNameWithExt(event);

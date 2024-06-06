@@ -801,7 +801,8 @@ textarea::placeholder{
     display: grid;
     align-items: center;
     align-content: center;
-    padding-top: 20%;
+    padding-top: 0%;
+    top:30%;
 }
 
 .form-cont input{

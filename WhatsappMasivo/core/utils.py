@@ -162,7 +162,7 @@ async def register_template(components):
         return template_name, {'status':'ERROR DE CONEXION'}
 
 
-
+"""
 async def register_interactive_template(message, data):
 
     template_name = f'edilar_{datetime.now(pytz.timezone("Mexico/General")).strftime("%y%m%d_%H%M%S")}'
@@ -238,6 +238,7 @@ async def register_interactive_template(message, data):
     except Exception as e:
         print(repr(e))
         return template_name, {'status':'ERROR DE CONEXION'}
+"""
 
 def to_parameters(params:list):
     dic_list = []
@@ -917,6 +918,7 @@ async def upload_file_api_2(file_data):
         print(repr(e))
         return {'status':'error', 'error':repr(e)}    
     
+"""
 async def register_template(message, data):
 
     template_name = f'edilar_{datetime.now(pytz.timezone("Mexico/General")).strftime("%y%m%d_%H%M%S")}'
@@ -961,3 +963,4 @@ async def register_template(message, data):
     except Exception as e:
         print(repr(e))
         return template_name, {'status':'ERROR DE CONEXION'}
+"""
