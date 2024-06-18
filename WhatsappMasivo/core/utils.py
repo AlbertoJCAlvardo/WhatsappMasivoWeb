@@ -136,7 +136,7 @@ async def register_template(components, from_number):
         }
     
     baid = settings.BUSINESS_ACCOUNT_ID
-    if from_number == 'redpotencia':
+    if from_number == 'Red Potencia':
         baid = settings.REDPOTENCIA_BUSINESS_ACCOUNT_ID
     
 
