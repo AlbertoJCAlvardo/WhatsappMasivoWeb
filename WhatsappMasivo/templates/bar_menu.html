@@ -36,7 +36,7 @@
                 <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 22 22"  onclick="document.getElementById('gotoenviomasivo').click()">
                   <use xlink:href="#message"></use>
                 </svg>
-                <a onclick="document.getElementById('gotoenviomasivo').click()">Envio Masivo</a>
+                <a onclick="document.getElementById('gotosend').click()">Envio Masivo</a>
               </li>
                 
               <li class="nav__items ">
@@ -67,6 +67,13 @@
             <input type="hidden" name="session_id" value="{{ session_id }}" />
             <input type="submit" id="gotochat" style="display: none;">
           </form>
+          <form action="/data_upload" method="get">
+            <input type="hidden" name="user" value="{{ user }}" />
+            <input type="hidden" name="session_id" value="{{ session_id }}" />
+            <input type="submit" id="gotosend" style="display: none;">
+          </form>
+          
+
 
 
 

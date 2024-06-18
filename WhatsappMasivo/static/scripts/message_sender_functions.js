@@ -1,6 +1,5 @@
 var selected_item;
 let button_list = [];
-let df
 
 function add_column(){
     let text_area = selected_item;
@@ -125,35 +124,62 @@ function addZero(i) {
     let popup = document.getElementById('popup-windo')
     let formcont = document.createElement('div');
     let button_add = document.createElement('button');
+    let button_close = document.createElement('button');
+
     formcont.classList.add('form-cont');
     formcont.classList.add('chat_message');
     formcont.innerHTML = "<input type='text' id='button-text' placeholder='Texto del Botón'/> <br> <input type='text' id='button-link' placeholder='Link del Botón'/>";
     button_add.innerHTML = "Insertar";
+    button_close.innerHTML = 'Cancelar';
     formcont.appendChild(button_add);
+    formcont.appendChild(button_close);
     button_add.onclick = () => {
         const urlexp = 'https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)';
         const url_pattern = RegExp(urlexp);
-        const spaces_regex = RegExp('[  ]+');
+        const spaces_regex = RegExp('[\t\n\v\f\r \u00a0\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u200b\u2028\u2029\u3000]+');
+    
         let button_text = document.getElementById('button-text');
         let button_link = document.getElementById('button-link');
-        console.log(spaces_regex.exec(button_text.value));
-        console.log(spaces_regex.exec(button_link.value));
-        console.log(url_pattern.exec(button_link.value));
-        if(spaces_regex.exec(button_text.value) == null && spaces_regex.exec(button_link.value) == null && button_text.value != '' && button_link.value != ''){
+        
+        
+        
+        if(button_text.value != '' && button_link.value != ''){
             let chat_message = document.getElementById('chat_message');
             let visual_btn = document.createElement('div');
             
             visual_btn.classList.add('visual-button');
             visual_btn.innerHTML = "<p>"+button_text.value+"<p/>"
             chat_message.appendChild(visual_btn);
-            button_list.push({'text':button_text.value, 'url':button_link.value, 'type':'URL'});
+            button_list.push({'text':button_text.value.normalize('NFD').replace(/[\u0300-\u036f]/g,""), 'url':button_link.value, 'type':'URL'});
+            
+            var delete_button = document.createElement('div');
+            delete_button.innerHTML = '<ion-icon name="close-circle"></ion-icon>';
+            delete_button.classList.add('delete-button');
+            delete_button.onclick = () => {
+                visual_btn.removeChild(delete_button);
+                chat_message.removeChild(visual_btn);
+                console.log(button_list);
+                button_list = button_list.filter(element => element['text'] != button_text.value &&  element['url'] != button_link.value);
+                console.log(button_list);
+                console.log('\n\n');
+            }
+            visual_btn.onmouseover = () => {
+                delete_button.classList.add('show-delete');
+            };
+            visual_btn.onmouseleave = () => {
+                delete_button.classList.remove('show-delete');
+            };
 
+            visual_btn.appendChild(delete_button);
             popup.innerHTML = "";
             popup.classList.remove('open-popup');
         }
         else{
             showMessageScreen('Campos invalidos');
         }
+    };
+    button_close.onclick = () => {
+        popup.classList.remove('open-popup');
     };
     popup.classList.add("popup-window");
     popup.appendChild(formcont);
@@ -220,7 +246,7 @@ function format_template(){
     switch(switch_status){
         case 'text':
             template_header['format'] = 'TEXT';
-            template_header['text'] = document.getElementById('message-header').value;
+            template_header['text'] = document.getElementById('message-header').value.normalize('NFD').replace(/[\u0300-\u036f]/g,"");
 
         break;
         case 'image':
@@ -232,9 +258,9 @@ function format_template(){
             
         break;
     }
-    template_body['text'] = document.getElementById('message-body').value;
+    template_body['text'] = document.getElementById('message-body').value.normalize('NFD').replace(/[\u0300-\u036f]/g,"");
 
-    template_footer['text'] = document.getElementById('message-footer').value;
+    template_footer['text'] = document.getElementById('message-footer').value.normalize('NFD').replace(/[\u0300-\u036f]/g,"");
 
     if(button_list.length > 0){
         template_buttons = {'type': 'BUTTONS',
@@ -264,7 +290,8 @@ async function send_messages(){
     let file;
     let message_resource_id = null; 
     let file_data = {};
-
+    const column_select = document.getElementById('number-select');
+    
     
     switch(switch_status){
         case 'image':
@@ -292,7 +319,7 @@ async function send_messages(){
     if(switch_status != 'text'){
         var formData = new FormData();
         formData.append('file', file);
-
+        formData.append('from_number', column_select.value)
         await axios.post('/upload_file/', formData,
             {headers: {'Content-Type':'multipart/form-data'}}
         ).then((response) => {
@@ -318,7 +345,8 @@ async function send_messages(){
                         'buttons': button_list.length
                         },
                 df: df,
-                file_data: file_data 
+                file_data: file_data,
+                from_number: column_select.value
             }
             ).then(function (response){
             response = response['data'];
@@ -354,7 +382,7 @@ async function send_messages(){
         });
         if(status == 200){
             console.log('Enviando Mensajes')
-            console.log('\nPrueba: ', response);
+            console.log('\nFrom number: ', column_select.value);
             message.innerHTML = '<div class="loading-message">Mensaje autorizado, enviando mensajes</div>';
             await axios.post('/send_messages/', {
                 df: df,
@@ -365,7 +393,7 @@ async function send_messages(){
 
                     },
                 user: document.getElementById('user').value,
-                from_number:document.get,
+                from_number:column_select.value,
                 file_data: file_data
             })
             .then(function (response){
@@ -443,7 +471,7 @@ window.onload = function(){
     up_file = null;
     up_img = null;
     message_header_cont = document.getElementById('message-header-cont');
-    df = document.getElementById('test').value;
+    df = document.getElementById('df').value;
     img_button = document.getElementById('img-button');
 
     file_button = document.getElementById('file-button');

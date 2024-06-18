@@ -55,7 +55,9 @@ async function validateLogin(){
             response = response['data'];
             console.log(response);
             if(response['message'] != 'ok'){
-                showMessageScreen(response['message']);
+                setTimeout(() => {
+                    showMessageScreen(response['message'])
+                }, 3000);
             }
             else{
                 console.log(response); 

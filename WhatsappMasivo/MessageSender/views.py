@@ -7,7 +7,7 @@ from core.formatter import format_string, format_phone_numbers, set_wa_format
 from django.views.decorators.csrf import csrf_exempt
 from core.utils import (send_message, register_template, get_components, 
                         check_template_status, remove_rejected_template, upload_file_api,
-                        get_upload_permission, upload_file_api_2)
+                        get_upload_permission, upload_file_api_2, get_user_projects, format_project_names)
 from db.utils import DatabaseManager
 from core.config import settings
 import io
@@ -59,6 +59,8 @@ def login(request):
                     message = "El usuario no existe"
                 if validation == 'wrong_password':
                     message = 'Contraseña Incorrecta'
+                if validation == 'unauthorized':
+                    message = 'Usuario no autorizado'
                     
                 print(message)
                 return HttpResponse(json.dumps({'message':message}))
@@ -136,7 +138,6 @@ def data_upload(request):
                 return HttpResponse(render_to_string('data_upload_index.html',
                                                         context=context))
             else:
-                print('aaaaaaaaaaaaa')
                 return HttpResponseRedirect('/login')
 
 
@@ -179,7 +180,7 @@ def data_upload(request):
                                         'filename':filename,
                                         'footer':footer,
                                         'headers':df.columns.to_list(),
-                                        'content':content,
+                                        'content':df.to_json(),
                                         'df':df.to_json(),        
                                 }
                             return HttpResponse(render_to_string('data_upload_index.html',
@@ -214,7 +215,8 @@ def message_sending(request):
                        'filename':filename,
                        'df':df.to_json,
                        'headers':list(df.columns), 
-                       'test':df.iloc[index:index+1].to_json}
+                       'test':df.iloc[index:index+1].to_json,
+                       'empresas': format_project_names(get_user_projects(user))}   
 
             return HttpResponse(render_to_string('message_sender_index.html',
                                                  context=context))
@@ -250,9 +252,11 @@ def template_registry(request):
     try:
          if request.method ==  'POST':
             body = json.loads(request.body.decode('utf-8'))
+            print('-*-*-*-*-\n\n\n', repr_dic(body))
             message = body['message']
             df = body['df']
-            print(type(df), df)
+            from_number = body['from_number']
+        
             df = pd.read_json(df)
 
             pre_component_dic = {}
@@ -297,7 +301,7 @@ def template_registry(request):
 
             if len(list(tokens_body.keys())) > 0:
                 pre_component_dic['BODY']['example'] = {
-                                    'body_text': get_components(df[list(tokens_body.keys())])
+                                    'body_text': [get_components(df[list(tokens_body.keys())])]
                                 }
             
 
@@ -306,7 +310,7 @@ def template_registry(request):
                 print(i)
                 components.append(pre_component_dic[i])
             print(f'Intentando registrar {components}')
-            template_name, response =  asyncio.run(register_template(components))
+            template_name, response =  asyncio.run(register_template(components, from_number=from_number))
             if 'error' not in response.keys():
                 status = response['status']
                
@@ -348,11 +352,13 @@ def template_registry(request):
             return HttpResponse(json.dumps(response))
 
     except Exception as e:
+        print('error: ', repr(e))
         raise e
 
 
 @csrf_exempt
 def get_file_authorization(request):
+
     if request.method == 'POST':
         body = json.loads(request.body.decode('utf-8'))
 
@@ -364,14 +370,14 @@ def send_messages(request):
         if request.method == "POST":
         
             body = json.loads(request.body.decode('utf-8'))
-           
+            repr_dic(body)
             message = body['message']
             df = body['df']
             df = pd.read_json(df)
             template_name = body['template_name']
             pre_component_dic = {}
             component_dic = {}
-            print(message)
+            from_number = body['from_number']
             pre_components = message['components']
             header_type = message['type']
             file_data = body['file_data']
@@ -411,11 +417,13 @@ def send_messages(request):
             db = DatabaseManager()
             
             df['NUMERO_TELEFONO'] = df['NUMERO_TELEFONO'].apply(format_number)
+            
 
             numeros_validos, numeros = format_phone_numbers(df['NUMERO_TELEFONO'])
-
+            print(numeros_validos, list(df['NUMERO_TELEFONO']))
             counter = 0
             print('\n\n\n\nEnviando mensajes...')
+            
             for index, row in df.iterrows():
                 
                 if row['NUMERO_TELEFONO'] in numeros_validos:
@@ -453,7 +461,8 @@ def send_messages(request):
                     response = asyncio.run(send_message( 
                                                         numeros[row['NUMERO_TELEFONO']].replace('+', ''),
                                                         template_name=template_name, 
-                                                        components=components))
+                                                        components=components,
+                                                        from_number=from_number))
                     print('\n\nresponse: \n',repr_dic(response))
                     
                     m_status = 'error'
@@ -512,10 +521,11 @@ def upload_file(request):
         try:
            
             
-            ar = request.FILES.get('file', None)
+           
             
             if request.FILES.get('file') != None:
-                
+                print(request)
+                from_number = request.POST.get('from_number') 
                 ar = request.FILES['file']
                 data = request.FILES['file'].read()
 
@@ -527,7 +537,11 @@ def upload_file(request):
                     name = filename
                 
                 mime = ""
+                extension = extension.lower()
+                if extension == 'jpg':
+                    extension = 'jpeg'
                 if extension in ("jpeg", 'jpg', 'png'):
+                    
                     mime = f'image/{extension}'
                 elif extension in ("mp4"):
                     mime = f'video/{extension}'
@@ -539,28 +553,34 @@ def upload_file(request):
                              'length': len(data),
                              'data': data,
                              'name': nme}
-               
-
-
+                
+                
+                print('\n\n\npn---', from_number)
+                
                 
                 permision = asyncio.run(get_upload_permission(file_data))
                
                 resource_id = asyncio.run(upload_file_api(permision['id'], file_data))
                 
-                display_id = asyncio.run(upload_file_api_2(file_data))
+                display_id = asyncio.run(upload_file_api_2(file_data, from_number))
                 display_id = json.loads(display_id)
                 response = {
-                    'resource_id': resource_id,
-                    'display_id': display_id['id'],
-                    'permision': permision
-                }
+                                        'resource_id': resource_id,
+                                        'permision':  permision
+                             }
+                
+                print(display_id)
+                if 'id' in display_id.keys():
+                    response['display_id'] = display_id['id']
 
-            
+                    return HttpResponse(json.dumps({'status':'ok', 'permisions':response}))
+                else:
+                    response['display_id'] = None
+                    
 
-                return HttpResponse(json.dumps({'status':'ok', 'permisions':response}))
-
-            return HttpResponse(json.dumps({'status':'error', 'error':'Error'}))
+                    return HttpResponse(json.dumps({'status':'error', 'error':"Error de registro"}))
         except Exception as e:
+            print('error de registro')
             print(repr(e))
             return HttpResponse(json.dumps({'status': 'error', 'error':repr(e)}))
 
@@ -585,3 +605,15 @@ def send_text_message(request):
                 'error': repr(e)
             })
             return HttpResponse(response, status=400)
+        
+@csrf_exempt
+def get_phone(request):
+    if request.method == 'GET':
+        user = request.GET.get('user')
+        
+        data = get_user_projects(user)
+        resp_dic = {'projects':data}
+        status = 400
+        if len(data) > 0:
+            status = 200
+        return HttpResponse(json.dumps(resp_dic), status=status)

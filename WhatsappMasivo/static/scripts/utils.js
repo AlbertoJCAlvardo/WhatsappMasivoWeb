@@ -70,8 +70,10 @@ function showLoadingScreenMessage(message){
 
 }
 function quitLoadingScreen(popup){
-    console.log(popup);
-    let maincontainer = document.body;
-    maincontainer.removeChild(popup);
-    popup.classList.remove('open-popup');
+    if(popup != null){
+        let maincontainer = document.body;
+        maincontainer.removeChild(popup);
+        popup.classList.remove('open-popup');
+    }
+
 }

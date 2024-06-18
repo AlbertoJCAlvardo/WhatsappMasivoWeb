@@ -97,17 +97,27 @@ def validate_login(user, password):
                     FROM CL.CL_SYS_USUARIO
                     WHERE USUARIO_ID = '{user}'
                 """
-        print('ejecutando query')
+        
         headers, result = do.execute_query(query)
+        do = DatabaseManager('sistemas')
+
+        query = f"""
+                    SELECT DISTINCT(PROYECTO) AS PROYECTOS
+                    FROM CL.CL_SYS_USUARIO_PROYECTO_WA
+                    WHERE USUARIO = '{user}'
+                """
         
-        print('query ejecutado')
+        headers, result2 = do.execute_query(query)
         
         
-        if (len(result) == 0):
+        if (len(result) == 0 and len(result2) == 0):
             return 'user_not_exist'
         else:
+            if len(result2) == 0:
+                return 'unauthorized'
             if result[0][0] != password:
                 return 'wrong_password'
+            
             return 'correct'
 
     except Exception as e:
@@ -117,22 +127,28 @@ def validate_login(user, password):
 
 
 
-async def register_template(components):
+async def register_template(components, from_number):
 
     template_name = f'edilar_{datetime.now(pytz.timezone("Mexico/General")).strftime("%y%m%d_%H%M%S")}'
 
     headers = { "Content-Type":"application/json",
                 "Authorization": f"Bearer {settings.ACCESS_TOKEN}",
         }
-    url = f"https://graph.facebook.com/v18.0/{settings.BUSINESS_ACCOUNT_ID}/message_templates"
     
+    baid = settings.BUSINESS_ACCOUNT_ID
+    if from_number == 'redpotencia':
+        baid = settings.REDPOTENCIA_BUSINESS_ACCOUNT_ID
+    
+
+    url = f"https://graph.facebook.com/v18.0/{baid}/message_templates"
+    print(url)
     body = {"name": template_name,
             "language": "es",
             "category": "MARKETING",
             "components": components
         }
-    print(body)
-
+    
+        
     body = json.dumps(body)
     print("body", body)
     try:
@@ -162,83 +178,6 @@ async def register_template(components):
         return template_name, {'status':'ERROR DE CONEXION'}
 
 
-"""
-async def register_interactive_template(message, data):
-
-    template_name = f'edilar_{datetime.now(pytz.timezone("Mexico/General")).strftime("%y%m%d_%H%M%S")}'
-
-    headers = { "Content-Type":"application/json",
-                "Authorization": f"Bearer {settings.ACCESS_TOKEN}",
-        }
-    url = f"https://graph.facebook.com/v18.0/{settings.BUSINESS_ACCOUNT_ID}/message_templates"
-    
-    print(data)
-
-    header_data = data['header_data']
-    body_data = data['body_data']
-
-    header_comp = {"type": "HEADER",
-                    "format": "TEXT",
-                    "text": message['header']}
-
-    if len(header_data.columns) > 0:
-        header_comp['example'] = {'header_text':
-                                        get_components(data=header_data)
-                                    
-                                } 
-    
-    body_comp = {"type": "BODY",
-                 "text": message['body']}
-
-    if len(body_data.columns) > 0:
-        body_comp['example'] = {'body_text':[
-                                        get_components(data=body_data)
-                                    ]
-                                } 
-
-
-    body = {"name": template_name,
-            "language": "es",
-            "category": "MARKETING",
-            "components": [
-                    header_comp,
-                    body_comp,
-                    {
-                        "type": "FOOTER",
-                        "text": message['footer']
-                    }
-            ]
-        }
-    print(body)
-
-    body = json.dumps(body)
-    print("body", body)
-    try:
-        async with aiohttp.ClientSession() as session:
-            
-            try:
-                async with session.post(url, data=body, headers=headers) as response:
-                    
-                        print("Status:", response.status)
-                        print("Content-type:", response.headers["content-type"])
-
-                        html = await response.text()
-                        response = json.loads(html)
-                        
-                        
-                        print(response)
-                        return template_name, response
-                    
-                        
-                            
-                        
-            except aiohttp.ClientConnectorError as e:
-                print("Connection Error", str(e))
-                return template_name, {'status':'ERROR DE CONEXION'}
-    except Exception as e:
-        print(repr(e))
-        return template_name, {'status':'ERROR DE CONEXION'}
-"""
 
 def to_parameters(params:list):
     dic_list = []
@@ -250,14 +189,14 @@ def to_parameters(params:list):
         dic_list.append(aux)
     return dic_list
 
-async def send_message(number, template_name, components):
+async def send_message(number, template_name, components, from_number):
     try:
 
         headers = {
         "Content-Type": "application/json",
         "Authorization": f"Bearer {settings.ACCESS_TOKEN}",
         }
-        
+        print('from_number', from_number)
         
         body = {"messaging_product": "whatsapp", 
                 "recipient_type": "individual",
@@ -270,14 +209,19 @@ async def send_message(number, template_name, components):
                 }
        
         body = json.dumps(body)
-        print(body)
+        phone_number = settings.PHONE_NUMBER
+        if from_number == 'Red Potencia':
+            phone_number = settings.REDPOTENCIA_PHONE_NUMBER
+            print(phone_number)
+        
         async with aiohttp.ClientSession() as session:
-            url = f"https://graph.facebook.com/v18.0/{settings.PHONE_NUMBER}/messages"
+            url = f"https://graph.facebook.com/v18.0/{phone_number}/messages"
             print(url)
             try:
                 async with session.post(url, data=body, headers=headers) as response:
                     html = await response.text()
                     if response.status == 200:
+
                         print("Status:", response.status)
                         print("Content-type:", response.headers["content-type"])
 
@@ -312,7 +256,12 @@ async def check_template_status(template_name):
                         html = await response.text()
 
                         response = json.loads(html)
-                        data = response["data"][0]
+                        if len(response['data']) > 0 :
+                            data = response["data"][0]
+                        else:
+                            print(response['data'])
+                            data = {'status':'pending'}
+                            
                         return data["status"]
                     else:
                         print("\n\n\n\nError")
@@ -421,8 +370,9 @@ def convert_query_dict(headers, data)-> list:
     for row in data:
         dic  = {}
         for i, header in enumerate(headers):
-            if header == 'CONTENIDO' and row[i][0] == '{':
-                dic[header] = json.loads(row[i])
+            if header == 'CONTENIDO' and isinstance(row[i], str):
+                if row[i][0] == '{':
+                    dic[header] = json.loads(row[i])
             else:
                 dic[header] = row[i]
         dic_list.append(dic)
@@ -797,8 +747,6 @@ async def get_upload_permission(file_data):
                     html = await response.text()
                     print(html)
                     if response.status == 200:
-                        print("Status:", response.status)
-                        print("Content-type:", response.headers["content-type"])
 
                         body = json.loads(html)
                         upload_id = body['id']
@@ -827,16 +775,16 @@ async def upload_file_api(upload_id, file_data):
         async with aiohttp.ClientSession() as session:
             try:
                 
-                url = f"https://graph.facebook.com/v19.0/{upload_id}"
+                url = f"https://graph.facebook.com/v18.0/{upload_id}"
                 print(url)
                 headers = {
                     "file_offset": "application/json",
-                    "Authorization": f"OAuth {settings.ACCESS_TOKEN}",
+                    "Authorization": f"OAuth {settings.ACCESS_TOKEN}"
                 }
                 
                 async with session.post(url, headers=headers, data=file_data['data']) as response:
                     html = await response.text()
-                    print(html)
+                    print('\n\n--Respuesta file api', html)
                     if response.status == 200:
                         r_data = json.loads(html)
                         print(repr_dic(r_data))
@@ -846,6 +794,7 @@ async def upload_file_api(upload_id, file_data):
                         
                          
             except aiohttp.ClientConnectorError as e:
+                
                 print("Connection Error", repr(e))
                 return {'status':'error', 'error':repr(e)}
         
@@ -856,53 +805,39 @@ async def upload_file_api(upload_id, file_data):
         print(repr(e))
         return {'status':'error', 'error':repr(e)}
 
-async def upload_file_api_2(file_data):
+async def upload_file_api_2(file_data, from_number):
 
     try:
         
         async with aiohttp.ClientSession() as session:
             try:
-                
-                url = f"https://graph.facebook.com/v19.0/{settings.EDILAR_PHONE_NUMBER_ID}/media"
+                phone_number = settings.EDILAR_PHONE_NUMBER_ID
+                if from_number == 'Red Potencia':
+                    phone_number = settings.REDPOTENCIA_PHONE_NUMBER
+
+                url = f"https://graph.facebook.com/v18.0/{phone_number}/media"
                 print(url)
 
-
-                
-                
                 data = {
                     'file':str(file_data['data']),
-                    'type':file_data['mime'],
-
+                    'type':file_data['mime']
                 }
-                """
-                mp = aiohttp.MultipartWriter()
-                
-                async with session.post(url, headers=headers, params=data) as response:
-                    html = await response.text()
-                    print(html)
-                    if response.status == 200:
-                        r_data = json.loads(html)
-                        print(repr_dic(r_data))
-                        return r_data
-
-                """    
+               
                 dt =file_data['data'] 
                 headers = {
                     "Authorization": f"Bearer {settings.ACCESS_TOKEN}"
                 }
                 files ={
                         'file': (file_data['name'], dt, file_data['mime'], {'Expires': '0'}),
-                       
-                       
-                        
                     }
                 data = {
                      'messaging_product':(None, 'whatsapp'),
-                        'type': (None, file_data['mime']),
+                        'type': (None, file_data['mime'])
                 }
                 
                 response = requests.post(url, headers=headers, files=files, data=data)
                 print('\n\n\n--',response.text)
+                
                 return response.text
                 
                         
@@ -918,49 +853,28 @@ async def upload_file_api_2(file_data):
         print(repr(e))
         return {'status':'error', 'error':repr(e)}    
     
-"""
-async def register_template(message, data):
+def get_user_projects(user):
+    dm = DatabaseManager('sistemas')
 
-    template_name = f'edilar_{datetime.now(pytz.timezone("Mexico/General")).strftime("%y%m%d_%H%M%S")}'
-
-    headers = { "Content-Type":"application/json",
-                "Authorization": f"Bearer {settings.ACCESS_TOKEN}",
-        }
-    url = f"https://graph.facebook.com/v18.0/{settings.BUSINESS_ACCOUNT_ID}/message_templates"
+    query = f"""
+                SELECT DISTINCT(PROYECTO) AS PROYECTOS
+                FROM CL.CL_SYS_USUARIO_PROYECTO_WA
+                WHERE USUARIO = '{user}'
+                """
     
-    body = {"name": template_name,
-            "language": "es",
-            "category": "MARKETING",
-            "components":"components"
-        }
+    headers, data = dm.execute_query(query)
+    
+    return data[0]
 
-    print(body)
 
-    body = json.dumps(body)
-    print("body", body)
-    try:
-        async with aiohttp.ClientSession() as session:
-            
-            try:
-                async with session.post(url, data=body, headers=headers) as response:
-                    
-                        print("Status:", response.status)
-                        print("Content-type:", response.headers["content-type"])
+def format_project_names(projects:list):
+    result = []
+    for i in projects:
+        if i == "EDILAR":
+            result.append('Edilar')
+        if i == "REDPOTENCIA":
+            result.append('Red Potencia')
+        else:
+            result.append(i)
 
-                        html = await response.text()
-                        response = json.loads(html)
-                        
-                        
-                        print(response)
-                        return template_name, response
-                    
-                        
-                            
-                        
-            except aiohttp.ClientConnectorError as e:
-                print("Connection Error", str(e))
-                return template_name, {'status':'ERROR DE CONEXION'}
-    except Exception as e:
-        print(repr(e))
-        return template_name, {'status':'ERROR DE CONEXION'}
-"""
+        return result

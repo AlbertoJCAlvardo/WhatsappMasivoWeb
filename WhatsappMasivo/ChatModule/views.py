@@ -153,21 +153,21 @@ def chat_list(request):
                                                         END STATUS_CONVERSACION,
                                                         PROFILE_NAME, CONTENIDO, TIPO
                                                 FROM CL.WHATSAPP_MASIVO_RESPUESTA V
-                                                
+
                                                 JOIN(
-                                                    SELECT DISTINCT(CONVERSATION_ID) CONVERSATION_ID, MAX(FECHA) START_DATE, MAX(ID_RESPUESTA) ID_RESPUESTA
+                                                    SELECT DISTINCT(ORIGEN) ORIGEN, MAX(FECHA) START_DATE, MAX(ID_RESPUESTA) ID_RESPUESTA
                                                     FROM CL.WHATSAPP_MASIVO_RESPUESTA
-                                                    GROUP BY CONVERSATION_ID
+                                                    GROUP BY ORIGEN
                                                 ) B
-                                                ON V.CONVERSATION_ID = B.CONVERSATION_ID AND V.FECHA = START_DATE
+                                                ON V.ORIGEN = B.ORIGEN AND V.FECHA = START_DATE
                                                 WHERE V.USUARIO = '{user}' 
-                                                ORDER BY FECHA ASC
+                                                ORDER BY FECHA DESC
                                                 OFFSET ({page} - 1)  * 10 ROWS
                                                 FETCH NEXT 10 ROWS ONLY 
 
                                             """
             headers, conversations = dm.execute_query(query)
-
+            print(conversations)
             conv_list = convert_query_dict(headers=headers, data=conversations)
             return HttpResponse(json.dumps(conv_list), status=200)
         except Exception as e:
@@ -177,16 +177,18 @@ def chat_list(request):
 @csrf_exempt
 def chat_window(request):
     if request.method == 'GET':
-        chat_id = request.GET.get('chat_id')
+        phone_number = request.GET.get('phone_number')
         page = request.GET.get('page')
-        print(chat_id, page)
+        print(f'ph: {phone_number}\n\n\n, {type(phone_number)}')
+        print(f'pg: {page}\n\n\n')
+        print(phone_number[3:])
         try:
             dm = DatabaseManager()
             headers, data = dm.execute_query(f"""
                                SELECT FECHA AS DATETIME, TO_CHAR(FECHA, 'MM-DD-RR') FECHA, TO_CHAR(FECHA, 'HH24:MI') TIEMPO, ORIGEN, DESTINO, WAMID, CONVERSATION_ID, TIPO,
                                     CONTENIDO, STATUS, USUARIO, 'RECIBIDO' FLOW
                                 FROM CL.WHATSAPP_MASIVO_RESPUESTA
-                                WHERE CONVERSATION_ID = '{chat_id}'
+                                WHERE ORIGEN = '{phone_number}'
                                 UNION
                                 (SELECT FECHA AS DATETIME, TO_CHAR(FECHA, 'MM-DD-RR') FECHA,
                                         TO_CHAR(FECHA, 'HH24:MI') TIEMPO,
@@ -200,14 +202,35 @@ def chat_window(request):
                                         USUARIO ,
                                         'ENVIADO' FLOW
                                 FROM CL.WHATSAPP_COMUNICATE
-                                WHERE CONVERSATION_ID = '{chat_id}'
+                                WHERE SUBSTR(DESTINO, 3,11) = '{phone_number[3:]}'
+                                
                                 )
 
                                 ORDER BY DATETIME DESC
                                 OFFSET ({page} - 1)  * 30 ROWS
                                 FETCH NEXT 30 ROWS ONLY
                              """)
+           
+            for i in data:
+                if isinstance(i, list):
+                   
+                    for j in range(len(i)):
+
+                        if isinstance(i[j], str):
+                            
+                            if '\"' in i[j]:
+                                
+                                i[j] = json.loads(i[j])
+                            
+                                
+            print('list a procesada')        
+            print(headers) 
+            print(data)
             query_list = convert_query_dict(headers, data)
+            print('querylis')
+
+           
+
             return HttpResponse(json.dumps(query_list), status=200)
 
         except Exception as e:
@@ -241,7 +264,7 @@ def api_image(request):
 @csrf_exempt
 def get_pages(request):
     if request.method == 'GET':
-        chat_id = request.GET.get('chat_id')
+        phone_number = request.GET.get('phone_number')
         
         try:
             dm = DatabaseManager()
@@ -251,7 +274,7 @@ def get_pages(request):
                                SELECT FECHA AS DATETIME, TO_CHAR(FECHA, 'MM-DD-RR') FECHA, TO_CHAR(FECHA, 'HH24:MI') TIEMPO, ORIGEN, DESTINO, WAMID, CONVERSATION_ID, TIPO,
                                     CONTENIDO, STATUS, USUARIO, 'RECIBIDO' FLOW
                                 FROM CL.WHATSAPP_MASIVO_RESPUESTA
-                                WHERE CONVERSATION_ID = '{chat_id}'
+                                WHERE ORIGEN = '{phone_number}'
                                 UNION
                                 (SELECT FECHA AS DATETIME, TO_CHAR(FECHA, 'MM-DD-RR') FECHA,
                                         TO_CHAR(FECHA, 'HH24:MI') TIEMPO,
@@ -265,7 +288,7 @@ def get_pages(request):
                                         USUARIO ,
                                         'ENVIADO' FLOW
                                 FROM CL.WHATSAPP_COMUNICATE
-                                WHERE CONVERSATION_ID = '{chat_id}'
+                                WHERE DESTINO = '{phone_number}'
                                 )
                                 )   
                              """)
@@ -283,9 +306,9 @@ def get_pages(request):
 def update_seen(request):
     if request.method == 'GET':
         try:
-            chat_id = request.GET.get('chat_id')
+            phone_number = request.GET.get('phone_number')
             dm = DatabaseManager()
-            dm.update_seen_status(chat_id=chat_id)
+            dm.update_seen_status(phone_number=phone_number)
             return HttpResponse(json.dumps({'status':'ok'}), 200)
         except Exception as e:
             error = repr(e)

@@ -573,7 +573,7 @@ textarea::placeholder{
 .message-popup .loading-message{
     position: absolute;
     top: 40%;
-    left: 42%;
+    margin-left: 0 auto;
     align-items: center;
     font-weight: 400;
     
@@ -585,7 +585,7 @@ textarea::placeholder{
 .open-popup .loading-message{
     position: absolute;
     top: 50%;
-    left: 45%;
+    margin-left: 0 auto;
     align-items: center;
     font-weight: 400;
     
@@ -828,26 +828,46 @@ textarea::placeholder{
     width: 250px;
     height: 40px;
     
-    padding-top: 8px;
+    
     margin-top:  10px;
-    margin-left: 150px;
+    margin-left: 100px;
     align-self: center;
     text-align: center;
-    font-size: 16px;
-    text-transform: uppercase;
+    font-size: 14px;
+    text-transform: capitalize;
     font-family: 'Lato', 'Arial', sans-serif;
-    background-color: #056833;
-    color:#DDDDDD;
+    background-color: #242c34;
+    color: #4395bf;
     box-shadow: 0 8px 8px -8px rgba(0, 0, 0,.9);
     border-radius: 5px;
     font-weight: 700;
+    z-index: 100;
 
 }
-.visual-button:hover{
-    background-color: rgba(0,0,0,0.77);
-     transition: 0.5s;
-     padding-top: 15px;
-     padding-bottom: 5px;
+
+.delete-button {
+   
+    
+    display: none;
+    z-index: 1;
+    height: 100%;
+    width: 100%;
+}
+.delete-button:hover{
+    font-size: 40px;
+    color: #242c34;
+}
+.show-delete{
+    color: #075E54;
+    top: -175%;
+    left: 52%;
+    z-index: 666;
+    position: relative;
+    display: unset;
+    font-size: 35px;
+    resize: both;
+    height: 50%;
+    width: 50%;
 }
 .carrussel{
     position: absolute;

@@ -4,6 +4,7 @@ var chats_page = 1;
 var contacts_page = 1;
 var messages_page = 1;
 var current_name = ""; 
+let phone_number;
 let chat_li = [];
 let button_send;
 var active_chat; 
@@ -128,7 +129,7 @@ async function send_message(){
     
     await axios.post('/send_text_message', {
         'message':message,
-        'chat_id': active_chat['chat_id']
+        'phone_number': active_chat['phone_number']
     })
     .then((response) => {
 
@@ -184,10 +185,11 @@ async function add_chats(page){
                 }
                 cc.addContactChat(chat_list);
                 cc.getElement().onclick = function(){
-
+                    console.log('\n\n\n\n');
+                    console.log(contact);
                     document.getElementById('chat_name').innerHTML = "<h4>"+ nombre+ "</h4>";
                     current_name = contact['PROFILE_NAME'];
-                    showChat(messages_page, contact['CONVERSATION_ID']);
+                    showChat(messages_page, contact['ORIGEN']);
                     chat_list.childNodes.forEach(chat => {
                         chat.classList.remove('active');
                     });
@@ -196,7 +198,7 @@ async function add_chats(page){
                     
                     axios.get('/update_seen/', {
                         params:{
-                            'chat_id':contact['CONVERSATION_ID']
+                            'phone_number':contact['ORIGEN']
                         }
                     }).then( (response) => {
                         cc.removeUnread();
@@ -214,12 +216,12 @@ async function add_chats(page){
     });
 }
 
-async function showChat(page, chat_id){
+async function showChat(page, phone_number){
     let pages;
     let cinput = document.getElementById('chinput');
     cinput.style.display = "";
     await axios.get('/message_pages/', {
-        params:{'chat_id': chat_id}
+        params:{'phone_number': phone_number}
     }).then(function(response){
         if(response.status == 200){
             console.log(response);
@@ -230,12 +232,12 @@ async function showChat(page, chat_id){
 
                 
                 axios.get('/chat_window/', {
-                    params:{'chat_id':chat_id,
+                    params:{'phone_number':phone_number,
                             'page':page}
                 }).then(function(response){
         
                     if(response.status == 200){
-                        let cw = new ChatWindow(user, chat_id);
+                        let cw = new ChatWindow(user, phone_number);
                         let messages = response['data'];
                         console.log(messages);
                         if(page == 1){
@@ -255,11 +257,13 @@ async function showChat(page, chat_id){
                     }
                     
                 }).catch(function(error){
-                    console.log(error);
+                    console.log('problemas cargando la pagina: '+page);
                 });
             }
             console.log(page, pages);
         }
+    }).catch((error) => {
+        showErrorScreen('Problemas al cargar el chat');
     })
 
    
@@ -272,14 +276,15 @@ async function showChat(page, chat_id){
 
 
 class ChatWindow{
-    constructor(name, chat_id){
+    constructor(name, phone_number){
         this.name = name;
         this.messages = [];
         this.chat_window = null;
-        this.chat_id = chat_id;
+        this.phone_number = phone_number;
     }
 
     async addMessage(parent, message_data){
+
         let message = document.createElement('div');
         message.classList.add('message')
         if(message_data['FLOW'] == 'RECIBIDO'){
@@ -289,39 +294,96 @@ class ChatWindow{
         if(message_data['FLOW'] == 'ENVIADO'){
             message.classList.add('my_msg');
         }
-
+        console.log((message_data['CONTENIDO']));
         let content  = document.createElement('p');
-       
-        if(message_data['TIPO'] == 'text' || message_data['TIPO'] == 'template'){
-            if(message_data['CONTENIDO'] instanceof Object){
-             content.innerHTML = message_data['CONTENIDO']['body'] + '<br>';
-            
-            }
-            else{
-                content.innerHTML = message_data['CONTENIDO'] + '<br>';
-               
-            }
-        }
+        console.log(message_data['CONTENIDO']);
+        if(message_data['FLOW'] == 'ENVIADO'){
+            let contenido = message_data['CONTENIDO'];
 
-        if(message_data['TIPO'] == 'image'){
-            
-            let caption = document.createElement('p');
+            if(contenido != null){
+                console.log(typeof(contenido));
+                console.log(contenido["components"]);
+                contenido['components'].forEach((component) => {
+                    const type = component['type'];
+                    
+                    switch(type){
+                        case 'HEADER':
+                            if(component['format'] == 'IMAGE'){
+                                let caption = document.createElement('p');
+                                var aux = document.createElement('div');
+                                axios.get('/image_api/', {
+                                    params:{
+                                            'id':component['display_id']}
+                                    }).then(function(response){
+                                            if(response.status == 200){
+                                            
+                                            aux.innerHTML = '<img src="data:'+response['data']['mime_type']+";charset=utf-8;base64,"+response['data']['base64']+'" />';
+                                           
+                                        }
+                                    }).catch(function(error){
+                                    console.log(error);
+                                });
+                                content.appendChild(aux);
+                                
+                            }
+                            if(component['format'] == 'TEXT'){
+                                var aux = document.createElement('p');
+                                aux.innerHTML = component['text'] + '<br>';
+                                content.appendChild(aux);
+                            }
+                            
+                        break;
+                        case 'BODY':
+                            var aux = document.createElement('p');
+                            aux.innerHTML = component['text'] + '<br>';
+                            content.appendChild(aux);
+                        break;
 
-             axios.get('/image_api/', {
-                params:{
-                        'id':message_data['CONTENIDO']['id']}
-                }).then(function(response){
-                        if(response.status == 200){
- 
-                        content.innerHTML = '<img src="data:'+response['data']['mime_type']+";charset=utf-8;base64,"+response['data']['base64']+'" />';
+                        case 'FOOTER':
+                            var aux = document.createElement('p');
+                            aux.innerHTML = component['text'] + '<br>';
+                            content.appendChild(aux);
+                        break;
 
                     }
-                }).catch(function(error){
-                console.log(error);
-            });
-            if(message_data['CONTENIDO']['caption'] != undefined){
-                caption.innerHTML  = message_data['CONTENIDO']['caption'] + '<br>';
-                content.appendChild(caption);
+
+                });
+
+            }
+        }
+        else{
+            if(message_data['TIPO'] == 'text' || message_data['TIPO'] == 'template'){
+                if(message_data['CONTENIDO'] instanceof Object 
+
+                ){
+                content.innerHTML = message_data['CONTENIDO']['body'] + '<br>';
+                
+                }
+                
+            }
+
+        
+
+            if(message_data['TIPO'] == 'image'){
+                
+                let caption = document.createElement('p');
+
+                axios.get('/image_api/', {
+                    params:{
+                            'id':message_data['CONTENIDO']['id']}
+                    }).then(function(response){
+                            if(response.status == 200){
+    
+                            content.innerHTML = '<img src="data:'+response['data']['mime_type']+";charset=utf-8;base64,"+response['data']['base64']+'" />';
+
+                        }
+                    }).catch(function(error){
+                    console.log(error);
+                });
+                if(message_data['CONTENIDO']['caption'] != undefined){
+                    caption.innerHTML  = message_data['CONTENIDO']['caption'] + '<br>';
+                    content.appendChild(caption);
+                }
             }
         }
         
@@ -339,7 +401,7 @@ class ChatWindow{
     }
 
 
-    load_messages(messages, parent){
+    async load_messages(messages, parent){
         
         this.messages = this.messages.concat(messages);
         let cur_msgs = this.messages.length;
@@ -367,6 +429,9 @@ class ChatWindow{
     }
     getId(){
         return this.chat_id;
+    }
+    getPhoneNumber(){
+        return this.phone_number;
     }
     getDate(datetime){
         
