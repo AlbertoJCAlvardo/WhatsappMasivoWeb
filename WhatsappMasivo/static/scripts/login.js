@@ -43,7 +43,7 @@ async function validateLogin(){
     else{
        let popup = showLoadingScreen();
         console.log(user, password);
-        await axios.post('/login/', {
+        axios.post('/login/', {
                     'user':user,
                     'password':password 
 

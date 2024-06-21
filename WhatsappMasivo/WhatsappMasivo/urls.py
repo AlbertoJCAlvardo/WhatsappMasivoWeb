@@ -17,7 +17,7 @@ from django.urls import path
 from django.conf.urls import url
 from django.contrib import admin
 from MessageSender.views import (index, login, data_upload, message_sending, check_message, send_messages,
-                                 template_registry, upload_file, format_table)
+                                 template_registry, upload_file, format_table, send_text_message)
 from ChatModule.views import (chat_module, whatsapp_webhook, chat_window, chat_list, api_image, get_pages,
                               update_seen)
 
@@ -40,5 +40,6 @@ urlpatterns = [
     path('update_seen/', update_seen),
     path('upload_file/', upload_file),
     path('format_table/', format_table),
+    path('send_text_message/', send_text_message),
 ]
  

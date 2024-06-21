@@ -400,8 +400,10 @@ async function send_messages(){
                 response = response['data'];
                 console.log(response);
                 popup.removeChild(message);
-                popup = showLoadingScreenMessage('Mensajes enviados!<br>Total:'+response.message_count);
-                
+                setTimeout(() => {
+                    showMessageScreen('Mensajes enviados!<br>Total:'+response.message_count);
+
+                }, 3000);                
                 if(response.status !== 200){
                     quitLoadingScreen(popup);
                     popup = showLoadingScreenMessage('loading-message">Fallo enviando los mensajes'+response.error)

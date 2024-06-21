@@ -7,7 +7,8 @@ from core.formatter import format_string, format_phone_numbers, set_wa_format
 from django.views.decorators.csrf import csrf_exempt
 from core.utils import (send_message, register_template, get_components, 
                         check_template_status, remove_rejected_template, upload_file_api,
-                        get_upload_permission, upload_file_api_2, get_user_projects, format_project_names)
+                        get_upload_permission, upload_file_api_2, get_user_projects, format_project_names,
+                        get_phone_number, send_text_mesage_api)
 from db.utils import DatabaseManager
 from core.config import settings
 import io
@@ -372,6 +373,7 @@ def send_messages(request):
             body = json.loads(request.body.decode('utf-8'))
             repr_dic(body)
             message = body['message']
+
             df = body['df']
             df = pd.read_json(df)
             template_name = body['template_name']
@@ -420,18 +422,18 @@ def send_messages(request):
             
 
             numeros_validos, numeros = format_phone_numbers(df['NUMERO_TELEFONO'])
-            print(numeros_validos, list(df['NUMERO_TELEFONO']))
+           
             counter = 0
             print('\n\n\n\nEnviando mensajes...')
             
             for index, row in df.iterrows():
                 
                 if row['NUMERO_TELEFONO'] in numeros_validos:
-                    
+                    print('\n\n\n--------- ', row)
             
                     if header_type == 'text':
                         header_message = pre_component_dic['HEADER']['text']
-                        formatted_header, tokens_header = set_wa_format(message=header_message, data=df.iloc[0])
+                        formatted_header, tokens_header = set_wa_format(message=header_message, data=df.iloc[[index], :])
                         header_parameters = []
                         
                         pre_component_dic['HEADER']['content'] = formatted_header
@@ -442,7 +444,7 @@ def send_messages(request):
                             })
 
                       
-                    formatted_body, tokens_body = set_wa_format(message=body_message, data=df.iloc[0])
+                    formatted_body, tokens_body = set_wa_format(message=body_message, data=df.iloc[[index],:])
                     body_parameters = []
 
                     for parameter in row.loc[tokens_body.keys()]:
@@ -456,7 +458,7 @@ def send_messages(request):
                     
                     components  = [component_dic['HEADER'], component_dic['BODY']]
                     
-                    
+                   
                     
                     response = asyncio.run(send_message( 
                                                         numeros[row['NUMERO_TELEFONO']].replace('+', ''),
@@ -476,18 +478,26 @@ def send_messages(request):
                             counter += 1
                         wamid = messages['id']
                         
+                    
+                    for i in message['components']:
+                        if i is not None:
+                            aux = i
+                            if 'text' in i.keys():
+                                i['text'] = format_string(i['text'], data=df.iloc[[index],:])
+                            print(aux, i)
+                            
                     print('message: ', message)
                     r_body = json.dumps(message)
                     print('insertando en la base de datos...')
                     db.insert_message_registry(message_data={
                         'date':datetime.now(pytz.timezone("Mexico/General")).strftime("%Y-%m-%d %H:%M:%S"),
-                        'user':get_user_name(body['user']),
+                        'user':body['user'],
                         'destiny':numeros[row['NUMERO_TELEFONO']].replace('+', ''),
                         'message': json.dumps(r_body),
                         'status_envio':m_status,
                         'type':'template',
                         'message_name':template_name,
-                        'origin': settings.WHATSAPP_NUMBER,
+                        'origin': get_phone_number(from_number),
                         'wamid':wamid,
                         'content': json.dumps(pre_component_dic),
                         'tipo': header_type
@@ -592,12 +602,43 @@ def file_test(request):
 @csrf_exempt
 def send_text_message(request):
 
-    if request.type == 'POST':
+    if request.method == 'POST':
+
+        
         try:
-            response = json.dumps({
-                'status': 'ok'
-            })
-            return HttpResponse(response, status=200)
+
+            body = json.loads(request.body)
+            to = body['phone_number']
+            from_number = body['from_number']
+            message  =  body['message']
+            user = body['user']
+            
+            
+
+            response = asyncio.run(send_text_mesage_api(message,from_number, to))
+            if 'messaging_product' in response.keys():
+                db = DatabaseManager()
+                db.insert_message_registry(message_data={
+                            'date':datetime.now(pytz.timezone("Mexico/General")).strftime("%Y-%m-%d %H:%M:%S"),
+                            'user':user,
+                            'destiny': to,
+                            'message': message,
+                            'status_envio':'ok',
+                            'type':'template',
+                            'message_name':None,
+                            'origin': from_number,
+                            'wamid':response['messages'][0]['id'],
+                            'content': message,
+                            'tipo': 'text'
+                        })
+                        
+                response = {'status':'ok'}
+            else:
+
+             response = {'status':'error'}            
+                
+            
+            return HttpResponse(json.dumps(response), status=200)
         
         except Exception as e:
             print(repr(e))

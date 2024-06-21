@@ -25,7 +25,7 @@ SECRET_KEY = 'd^b*%ngvgzkd(vuf@9(46++pl#e&2x74i&i%x@rr#)q&@_!ntj'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['localhost', '192.168.83.117']
+ALLOWED_HOSTS = ['localhost', '192.168.83.117', 'masivo.edilar.com']
 
 
 

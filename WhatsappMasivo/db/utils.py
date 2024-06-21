@@ -60,7 +60,7 @@ class DatabaseManager:
                           '{message_data['type']}', '{message_data['message_name']}', '{message_data['origin']}', '{message_data['wamid']}',
                           '{message_data['content']}', '{message_data['tipo']}')
                     """
-            
+            print(query)
             result = database.execute(query)
 
             
@@ -228,7 +228,7 @@ class DatabaseManager:
                         AND  ORIGEN = '{phone_number}'
                     """
             result = database.execute(query)
-            
+            print('en teoria procesado')
             result = database.execute("COMMIT")
         except Exception as e:
             print(repr(e))

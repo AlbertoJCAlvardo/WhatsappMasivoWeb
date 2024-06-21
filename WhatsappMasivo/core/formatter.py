@@ -77,7 +77,7 @@ def set_wa_format(message, data:pd.DataFrame):
                     else:
                         tokens[key] = str(index)
                         index += 1
-                        formatted += f" {{{{{tokens[key]}}}}}"
+                        formatted += f"{{{{{tokens[key]}}}}}"
                 else:
                     formatted += f"{key}"
 
@@ -88,7 +88,7 @@ def set_wa_format(message, data:pd.DataFrame):
                 else:
                         tokens[key] = str(index)
                         index += 1
-                        formatted += f" {{{{{tokens[key]}}}}}"
+                        formatted += f"{{{{{tokens[key]}}}}}"
                 formatted += f"{lst2[1]}"
             
         else:

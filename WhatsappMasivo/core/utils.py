@@ -369,12 +369,20 @@ def convert_query_dict(headers, data)-> list:
     dic_list = []
     for row in data:
         dic  = {}
+        
         for i, header in enumerate(headers):
             if header == 'CONTENIDO' and isinstance(row[i], str):
-                if row[i][0] == '{':
-                    dic[header] = json.loads(row[i])
+                if len(row[i]) > 0:
+                    if row[i][0] == '{':
+                        dic[header] = json.loads(row[i])
+                    else:
+                     dic[header] = row[i]
+
+                else:
+                    dic[header] = row[i]
             else:
-                dic[header] = row[i]
+                    dic[header] = row[i]
+            
         dic_list.append(dic)
     
     return dic_list
@@ -438,33 +446,36 @@ async def get_image_from_url(url):
         return "Error" 
     
 
-async def send_text_mesage(body, destiny, phone_number):
+async def send_text_mesage_api(body, phone_number, destiny):
     try:
         phone_number_id = ""
-        if phone_number == 'edilar':
-            phone_number_id  = settings.PHONE_NUMBER
-        if phone_number == 'redpotencia':
+        print(body)
+        if '521'+phone_number == settings.PHONE_NUMBER:
+            phone_number_id  = settings.EDILAR_PHONE_NUMBER_ID
+        if '521' + phone_number == settings.REDPOTENCIA_PHONE_NUMBER:
             phone_number_id  = settings.REDPOTENCIA_PHONE_NUMBER
 
-        url = f'https://graph.facebook.com/v18.0/{phone_number_id}/messages'
+      
         headers = {
-            f'Authorization': 'Bearer {settings.ACCESS_TOKEN}',
+            f'Authorization': f'Bearer {settings.ACCESS_TOKEN}',
             'Content-Type': 'application/json'
         }
+        print(headers)
         body = {
             'messaging_product': 'whatsapp',
             'recipient_type': 'individual',
-            'to': '{destiny}',
+            'to': f'{destiny}',
             'type': 'text',
+            'preview_url': False,
             'text': {
-                'preview_url': False,
-                'body': message
+                
+                'body': body
             }
         }
 
         body = json.dumps(body)
         async with aiohttp.ClientSession() as session:
-            url = f"https://graph.facebook.com/v18.0/{settings.PHONE_NUMBER}/messages"
+            url = f'https://graph.facebook.com/v19.0/{phone_number_id}/messages'
             print(url)
             try:
                 async with session.post(url, data=body, headers=headers) as response:
@@ -474,10 +485,11 @@ async def send_text_mesage(body, destiny, phone_number):
                         print("Content-type:", response.headers["content-type"])
 
                         
-                        print("Body:", html)
+                        print("Body:", json.loads(html))
                         
                         return json.loads(html)
-                    
+                    else:
+                        print('\n\nerror: ',html)
                     return json.loads(html)
                          
             except aiohttp.ClientConnectorError as e:
@@ -877,4 +889,10 @@ def format_project_names(projects:list):
         else:
             result.append(i)
 
-        return result
+
+def get_phone_number(project):
+    
+    if project == 'Edilar':
+        return settings.PHONE_NUMBER
+    if project == 'Red Potencia':
+        return settings.REDPOTENCIA_PHONE_NUMBER

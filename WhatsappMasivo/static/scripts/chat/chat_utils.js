@@ -5,6 +5,7 @@ var contacts_page = 1;
 var messages_page = 1;
 var current_name = ""; 
 let phone_number;
+let actualcc;
 let chat_li = [];
 let button_send;
 var active_chat; 
@@ -21,7 +22,7 @@ function  handleChatIntersection(entries, observer){
         if(entry.isIntersecting){
             console.log(entry.target.innerHTML);
             messages_page += 1;
-            showChat(messages_page, active_chat.getId());
+            showChat(messages_page, actualcc.phone_number);
         }
     });
     
@@ -124,15 +125,24 @@ function send_button_change(event){
 
 async function send_message(){
     
-    const message = document.getElementById('message').value;
-    console.log(active_chat);
+    const message = document.getElementById('message_input').value;
+    console.log(actualcc);
     
-    await axios.post('/send_text_message', {
+    await axios.post('/send_text_message/', {
         'message':message,
-        'phone_number': active_chat['phone_number']
+        'from_number': actualcc.origen,
+        'phone_number': actualcc.destino,
+        'user': 'user'
     })
     .then((response) => {
-
+            console.log(response.data);
+            if(response.status == 200){
+                
+                body = response.data;
+                if(body['status'] == 'ok'){
+                 location.reload();
+                }
+            }
     })
     .catch((error) => {
 
@@ -156,7 +166,7 @@ async function add_chats(page){
             let sw = 1;
             data.forEach(contact => {
                 
-                console.log(contact);
+                
                 let label = "";
                 let nombre = "";
                 if(contact['TIPO'] == 'text'){
@@ -175,36 +185,35 @@ async function add_chats(page){
                     nombre = contact['PROFILE_NAME'];
                 }
                 
+                
                 let cc  = new ContactChat(label, contact['TIEMPO'], contact['CONVERSATION_ID'], contact['FECHA'], 
-                                            nombre, contact['UNREAD_MESSAGES']);
-                                            
+                    nombre, contact['UNREAD_MESSAGES'], contact['TEL_USUARIO'], contact['TEL_EMPRESA']);
+                    
                 chat_li.push(cc);
                 if(page == 1 && sw == 1){
-                    chat_list.innerHTML="";
-                    sw  = 0;
-                }
+                chat_list.innerHTML="";
+                sw  = 0;
+}
                 cc.addContactChat(chat_list);
                 cc.getElement().onclick = function(){
+                    actualcc = cc;
+                    messages_page = 1;
+                    chat_box.innerHTML = "";
                     console.log('\n\n\n\n');
-                    console.log(contact);
+                    console.log('Click para', contact['PROFILE_NAME']);
                     document.getElementById('chat_name').innerHTML = "<h4>"+ nombre+ "</h4>";
                     current_name = contact['PROFILE_NAME'];
+                    
                     showChat(messages_page, contact['ORIGEN']);
+                    console,
                     chat_list.childNodes.forEach(chat => {
                         chat.classList.remove('active');
                     });
+                    
                     cc.contact_chat.classList.add('active');
                     
                     
-                    axios.get('/update_seen/', {
-                        params:{
-                            'phone_number':contact['ORIGEN']
-                        }
-                    }).then( (response) => {
-                        cc.removeUnread();
-                    }).catch((error) => {
-                        console.log(error);
-                    });
+                    
 
                 };
                 contactObserver.observe(cc.getElement());
@@ -220,53 +229,41 @@ async function showChat(page, phone_number){
     let pages;
     let cinput = document.getElementById('chinput');
     cinput.style.display = "";
-    await axios.get('/message_pages/', {
-        params:{'phone_number': phone_number}
-    }).then(function(response){
-        if(response.status == 200){
-            console.log(response);
-            pages = response['data']['paginas'];
-            console.log(response['data']);
-            if(page <= pages + 1){
-
-
-                
-                axios.get('/chat_window/', {
-                    params:{'phone_number':phone_number,
-                            'page':page}
-                }).then(function(response){
-        
-                    if(response.status == 200){
-                        let cw = new ChatWindow(user, phone_number);
-                        let messages = response['data'];
-                        console.log(messages);
-                        if(page == 1){
-                            chat_box.innerHTML = "";
-                            active_chat = cw;
-                            
-                        }
-                        
-                        cw.load_messages(messages, chat_box);
-                        
-                        
-                        if(chat_box.children.length > 0){
-                            if(chat_box.children.length > 3){
-                                observer.observe(chat_box.children[3]);
-                            }
-                        }
-                    }
-                    
-                }).catch(function(error){
-                    console.log('problemas cargando la pagina: '+page);
-                });
-            }
-            console.log(page, pages);
-        }
-    }).catch((error) => {
-        showErrorScreen('Problemas al cargar el chat');
-    })
-
+    console.log('Actualizando visto');
    
+    
+    await axios.get('/chat_window/', {
+        params:{'phone_number':phone_number,
+                'page':page}
+    }).then((response) => {
+        console.log(response);
+        if(response.status == 200){
+                
+                if(page == 1){
+                    let cw = new ChatWindow(user, phone_number);
+                    active_chat = cw;
+                }
+
+                   
+                    
+                
+                
+                let messages = response['data'];
+                console.log('recibidos: ', messages);
+                
+                active_chat.load_messages(messages, chat_box);
+                
+                
+                if(chat_box.children.length > 0){
+                    if(chat_box.children.length > 3){
+                        observer.observe(chat_box.children[3]);
+                    }
+                }
+            
+        }
+    }).catch(function(error){
+        console.log('problemas cargando la pagina: '+error);
+    });
    
     
 }
@@ -283,8 +280,8 @@ class ChatWindow{
         this.phone_number = phone_number;
     }
 
-    async addMessage(parent, message_data){
-
+     addMessage(parent, message_data){
+        
         let message = document.createElement('div');
         message.classList.add('message')
         if(message_data['FLOW'] == 'RECIBIDO'){
@@ -294,61 +291,68 @@ class ChatWindow{
         if(message_data['FLOW'] == 'ENVIADO'){
             message.classList.add('my_msg');
         }
+        
         console.log((message_data['CONTENIDO']));
         let content  = document.createElement('p');
         console.log(message_data['CONTENIDO']);
         if(message_data['FLOW'] == 'ENVIADO'){
             let contenido = message_data['CONTENIDO'];
 
-            if(contenido != null){
+            if(contenido != null && typeof(contenido) != 'string'){
                 console.log(typeof(contenido));
                 console.log(contenido["components"]);
                 contenido['components'].forEach((component) => {
-                    const type = component['type'];
-                    
-                    switch(type){
-                        case 'HEADER':
-                            if(component['format'] == 'IMAGE'){
-                                let caption = document.createElement('p');
-                                var aux = document.createElement('div');
-                                axios.get('/image_api/', {
-                                    params:{
-                                            'id':component['display_id']}
-                                    }).then(function(response){
-                                            if(response.status == 200){
+                   
+                    if(component != null){
+                        const type = component['type'];
+                        switch(type){
+                            case 'HEADER':
+                                if(component['format'] == 'IMAGE'){
+                                    let caption = document.createElement('p');
+                                    var aux = document.createElement('div');
+                                    axios.get('/image_api/', {
+                                        params:{
+                                                'id':component['display_id']}
+                                        }).then(function(response){
+                                                if(response.status == 200){
+                                                
+                                                aux.innerHTML = '<img src="data:'+response['data']['mime_type']+";charset=utf-8;base64,"+response['data']['base64']+'" />';
                                             
-                                            aux.innerHTML = '<img src="data:'+response['data']['mime_type']+";charset=utf-8;base64,"+response['data']['base64']+'" />';
-                                           
-                                        }
-                                    }).catch(function(error){
-                                    console.log(error);
-                                });
-                                content.appendChild(aux);
+                                            }
+                                        }).catch(function(error){
+                                        console.log(error);
+                                    });
+                                    content.appendChild(aux);
+                                    
+                                }
+                                if(component['format'] == 'TEXT'){
+                                    var aux = document.createElement('p');
+                                    aux.innerHTML = component['text'] + '<br>';
+                                    content.appendChild(aux);
+                                }
                                 
-                            }
-                            if(component['format'] == 'TEXT'){
+                            break;
+                            case 'BODY':
                                 var aux = document.createElement('p');
                                 aux.innerHTML = component['text'] + '<br>';
                                 content.appendChild(aux);
-                            }
-                            
-                        break;
-                        case 'BODY':
-                            var aux = document.createElement('p');
-                            aux.innerHTML = component['text'] + '<br>';
-                            content.appendChild(aux);
-                        break;
+                            break;
 
-                        case 'FOOTER':
-                            var aux = document.createElement('p');
-                            aux.innerHTML = component['text'] + '<br>';
-                            content.appendChild(aux);
-                        break;
+                            case 'FOOTER':
+                                var aux = document.createElement('p');
+                                aux.innerHTML = component['text'] + '<br>';
+                                content.appendChild(aux);
+                            break;
 
+                        }
                     }
-
                 });
 
+            }
+            else{
+                var aux = document.createElement('p');
+                aux.innerHTML = contenido + '<br>';
+                content.appendChild(aux);
             }
         }
         else{
@@ -401,30 +405,32 @@ class ChatWindow{
     }
 
 
-    async load_messages(messages, parent){
-        
+    load_messages(messages, parent){
+        console.log('Intenado cargar mensajes.');
         this.messages = this.messages.concat(messages);
         let cur_msgs = this.messages.length;
-        
-            
-        let cur_date = new Date(messages[0]['FECHA']);
-        let today = new Date();
-        messages.forEach(element => {
-            let f_mensaje = new Date(element['FECHA']);
-            
-            if(f_mensaje.getDate() <  cur_date.getDate() && f_mensaje.getDate() <  today.getDate()){
+        console.log(this.messages.length);
+        if(this.messages.length > 0){
+            console.log('Cargando mensajes.');
+            let cur_date = new Date(this.messages[0]['FECHA']);
+            let today = new Date();
+            messages.forEach(element => {
+                let f_mensaje = new Date(element['FECHA']);
                 
-                let cuadro_fecha = document.createElement('div');
-                cuadro_fecha.classList.add('date-box');
-                cuadro_fecha.innerHTML = "<span class='date-text'>"+this.getDate(cur_date)+"</span>";
-                parent.insertBefore(cuadro_fecha, parent.firstChild);
-                cur_date = f_mensaje;
+                if(f_mensaje.getDate() <  cur_date.getDate() && f_mensaje.getDate() <  today.getDate()){
+                    
+                    let cuadro_fecha = document.createElement('div');
+                    cuadro_fecha.classList.add('date-box');
+                    cuadro_fecha.innerHTML = "<span class='date-text'>"+this.getDate(cur_date)+"</span>";
+                    parent.insertBefore(cuadro_fecha, parent.firstChild);
+                    cur_date = f_mensaje;
+                }
+                this.addMessage(parent, element);
+            });
+            
+            if(cur_msgs <= 30){
+                parent.scrollTo(0, parent.scrollHeight);
             }
-            this.addMessage(parent, element);
-        });
-        
-        if(cur_msgs <= 30){
-            parent.scrollTo(0, parent.scrollHeight);
         }
     }
     getId(){
@@ -464,13 +470,15 @@ class ChatWindow{
 
 
 class ContactChat{
-    constructor(content, sent_hour, chat_id, last_message_time, name, unread_messages){
+    constructor(content, sent_hour, chat_id, last_message_time, name, unread_messages, origen, destino){
         this.content = content;
         this.sent_hour = sent_hour;
         this.chat_id = chat_id;
         this.name = name;
         this.datetime = new Date(last_message_time);
         this.contact_chat = null;
+        this.origen = origen;
+        this.destino = destino;
         if(unread_messages != ''){
             this.unread_messages = parseInt(unread_messages); 
         }
