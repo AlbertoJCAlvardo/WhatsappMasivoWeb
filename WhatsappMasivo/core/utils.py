@@ -211,7 +211,7 @@ async def send_message(number, template_name, components, from_number):
         body = json.dumps(body)
         phone_number = settings.PHONE_NUMBER
         if from_number == 'Red Potencia':
-            phone_number = settings.REDPOTENCIA_PHONE_NUMBER
+            phone_number = settings.REDPOTENCIA_PHONE_NUMBER_ID
             print(phone_number)
         
         async with aiohttp.ClientSession() as session:
@@ -505,9 +505,9 @@ async def upload_media(media, phone_number):
     try:
         phone_number_id = ""
         if phone_number == 'edilar':
-            phone_number_id  = settings.PHONE_NUMBER
+            phone_number_id  = settings.EDILAR_PHONE_NUMBER_ID
         if phone_number == 'redpotencia':
-            phone_number_id  = settings.REDPOTENCIA_PHONE_NUMBER
+            phone_number_id  = settings.REDPOTENCIA_PHONE_NUMBER_ID
 
         url = f'https://graph.facebook.com/v18.0/{phone_number_id}/media'
         headers = {
@@ -825,7 +825,7 @@ async def upload_file_api_2(file_data, from_number):
             try:
                 phone_number = settings.EDILAR_PHONE_NUMBER_ID
                 if from_number == 'Red Potencia':
-                    phone_number = settings.REDPOTENCIA_PHONE_NUMBER
+                    phone_number = settings.REDPOTENCIA_PHONE_NUMBER_ID
 
                 url = f"https://graph.facebook.com/v18.0/{phone_number}/media"
                 print(url)
@@ -873,9 +873,9 @@ def get_user_projects(user):
                 FROM CL.CL_SYS_USUARIO_PROYECTO_WA
                 WHERE USUARIO = '{user}'
                 """
-    
+   
     headers, data = dm.execute_query(query)
-    
+    print(data)
     return data[0]
 
 
@@ -884,12 +884,17 @@ def format_project_names(projects:list):
     for i in projects:
         if i == "EDILAR":
             result.append('Edilar')
+            continue
         if i == "REDPOTENCIA":
             result.append('Red Potencia')
+            continue
+        if i == 'CORREO_DEL_MAESTRO':
+            result.append('Correo Del Maestro')
+            continue
         else:
             result.append(i)
 
-
+    return result
 def get_phone_number(project):
     
     if project == 'Edilar':
