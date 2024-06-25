@@ -26,6 +26,7 @@ async function file_check(){
             extension = ext;
             formdata = new FormData();
             formdata.append('file', file);
+            console.log(file);
             axios.post('/format_table/', formdata,{
                     headers:{'Content-Type': file.type},
                     
