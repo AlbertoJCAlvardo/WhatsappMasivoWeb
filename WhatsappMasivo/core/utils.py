@@ -256,11 +256,12 @@ async def check_template_status(template_name):
                         html = await response.text()
 
                         response = json.loads(html)
+                        print(response)
                         if len(response['data']) > 0 :
                             data = response["data"][0]
                         else:
                             print(response['data'])
-                            data = {'status':'pending'}
+                            data = {'status':'PENDING'}
                             
                         return data["status"]
                     else:
@@ -453,7 +454,7 @@ async def send_text_mesage_api(body, phone_number, destiny):
         if '521'+phone_number == settings.PHONE_NUMBER:
             phone_number_id  = settings.EDILAR_PHONE_NUMBER_ID
         if '521' + phone_number == settings.REDPOTENCIA_PHONE_NUMBER:
-            phone_number_id  = settings.REDPOTENCIA_PHONE_NUMBER
+            phone_number_id  = settings.REDPOTENCIA_PHONE_NUMBER_ID
 
       
         headers = {

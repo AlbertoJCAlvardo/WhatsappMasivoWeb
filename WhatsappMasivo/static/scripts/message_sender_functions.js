@@ -331,12 +331,101 @@ async function send_messages(){
             if(response['status']  !== 'ok'){
                 file_switch = 0;
             } 
+            else{
+                 axios.post('/register_template/', 
+                    { 
+                        message:{'components': components,
+                                'type': switch_status,
+                                'buttons': button_list.length
+                                },
+                        df: df,
+                        file_data: file_data,
+                        from_number: column_select.value,
+                        timeout: 50000
+                    }, 
+                    ).then(function (response){
+                    response = response['data'];
+                    
+                    status = response['status'];
+                    console.log(status);
+                    template_name = response['template_name'];
+                    display_id = response['display_ids'];
+                    if(response['type'] != 'text'){
+                        message_resource_id = response['resource_id']; 
+                        
+                    }
+                    if (status !== 200){
+                        
+                        quitLoadingScreen(popup);
+                        if(status !== 400){
+                            popup = showLoadingScreenMessage('Fallo en el registro de mensajes<br>\n error: '+processText(response['error']));
+                        }
+                        else{
+                            popup = showLoadingScreenMessage('Fallo en el registro de mensajes');
+                        }
+                        setTimeout(function(){
+                            quitLoadingScreen(popup);
+                        }, 5000);
+                    }
+                    else{
+                        setTimeout(() => {
+                            showMessageScreen('Plantilla Registrada');
+                        }, 2000);
+                        console.log('Enviando Mensajes')
+                        console.log('\nFrom number: ', column_select.value);
+                        message.innerHTML = '<div class="loading-message">Mensaje autorizado, enviando mensajes</div>';
+                        axios.post('/send_messages/', {
+                            df: df,
+                            template_name:template_name,
+                            message:{'components': components,
+                                'type': switch_status,
+                                'buttons': button_list.length,
+            
+                                },
+                            user: document.getElementById('user').value,
+                            from_number:column_select.value,
+                            file_data: file_data
+                        })
+                        .then(function (response){
+                            response = response['data'];
+                            console.log(response);
+                            popup.removeChild(message);
+                            setTimeout(() => {
+                                showMessageScreen('Mensajes enviados!<br>Total:'+response.message_count);
+            
+                            }, 3000);                
+                            if(response.status !== 200){
+                                quitLoadingScreen(popup);
+                                popup = showLoadingScreenMessage('loading-message">Fallo enviando los mensajes'+response.error)
+                                message.innerHTML = '<div class="loading-message">Fallo enviando los mensajes'+response.error+'</div>';
+                            }
+                            popup.appendChild(message)
+                            setTimeout(function(){
+                                quitLoadingScreen(popup);
+                            }, 3000);
+                    
+                        })
+                        .catch(function (error){
+                            quitLoadingScreen(popup);
+                                popup = showLoadingScreenMessage('loading-message">Fallo enviando los mensajes'+error);
+                                quitLoadingScreen(popup);
+                        }); 
+                    }
+                    
+                
+                })
+                .catch(function (error){
+                setTimeout(function(){
+                        quitLoadingScreen(popup);
+                        }, 5000)
+                });
+            }
         }).catch((error)=>{
             console.log(error);
             file_switch = 0;
         })
     }
-    if(file_switch == 1){
+    else{
         console.log('Registrando el template');
         await axios.post('/register_template/', 
             { 
@@ -372,6 +461,47 @@ async function send_messages(){
                     quitLoadingScreen(popup);
                 }, 5000);
             }
+            else{
+                console.log('Enviando Mensajes')
+                console.log('\nFrom number: ', column_select.value);
+                message.innerHTML = '<div class="loading-message">Mensaje autorizado, enviando mensajes</div>';
+                axios.post('/send_messages/', {
+                    df: df,
+                    template_name:template_name,
+                    message:{'components': components,
+                        'type': switch_status,
+                        'buttons': button_list.length,
+    
+                        },
+                    user: document.getElementById('user').value,
+                    from_number:column_select.value,
+                    file_data: file_data
+                })
+                .then(function (response){
+                    response = response['data'];
+                    console.log(response);
+                    popup.removeChild(message);
+                    setTimeout(() => {
+                        showMessageScreen('Mensajes enviados!<br>Total:'+response.message_count);
+    
+                    }, 3000);                
+                    if(response.status !== 200){
+                        quitLoadingScreen(popup);
+                        popup = showLoadingScreenMessage('loading-message">Fallo enviando los mensajes'+response.error)
+                        message.innerHTML = '<div class="loading-message">Fallo enviando los mensajes'+response.error+'</div>';
+                    }
+                    popup.appendChild(message)
+                    setTimeout(function(){
+                        quitLoadingScreen(popup);
+                    }, 3000);
+            
+                })
+                .catch(function (error){
+                    quitLoadingScreen(popup);
+                        popup = showLoadingScreenMessage('loading-message">Fallo enviando los mensajes'+error);
+                        quitLoadingScreen(popup);
+                }); 
+            }
             
         
         })
@@ -380,52 +510,9 @@ async function send_messages(){
                 quitLoadingScreen(popup);
                 }, 5000)
         });
-        if(status == 200){
-            console.log('Enviando Mensajes')
-            console.log('\nFrom number: ', column_select.value);
-            message.innerHTML = '<div class="loading-message">Mensaje autorizado, enviando mensajes</div>';
-            await axios.post('/send_messages/', {
-                df: df,
-                template_name:template_name,
-                message:{'components': components,
-                    'type': switch_status,
-                    'buttons': button_list.length,
-
-                    },
-                user: document.getElementById('user').value,
-                from_number:column_select.value,
-                file_data: file_data
-            })
-            .then(function (response){
-                response = response['data'];
-                console.log(response);
-                popup.removeChild(message);
-                setTimeout(() => {
-                    showMessageScreen('Mensajes enviados!<br>Total:'+response.message_count);
-
-                }, 3000);                
-                if(response.status !== 200){
-                    quitLoadingScreen(popup);
-                    popup = showLoadingScreenMessage('loading-message">Fallo enviando los mensajes'+response.error)
-                    message.innerHTML = '<div class="loading-message">Fallo enviando los mensajes'+response.error+'</div>';
-                }
-                popup.appendChild(message)
-                setTimeout(function(){
-                    quitLoadingScreen(popup);
-                }, 3000);
-        
-            })
-            .catch(function (error){
-                quitLoadingScreen(popup);
-                    popup = showLoadingScreenMessage('loading-message">Fallo enviando los mensajes'+error);
-                    quitLoadingScreen(popup);
-            }); 
-        }
+       
     }
-    else{
-        quitLoadingScreen(popup);
-        showMessageScreen('Error en la subida del archivo');
-    }
+    
 
    
    
