@@ -41,11 +41,12 @@ def login(request):
             request = json.loads(request.body)
             user = request['user']
             password = request['password']
-           
-            db = DatabaseManager('sistemas')
+            print(user, password)
+            db = DatabaseManager()
             start = time()
             validation = validate_login(user=user,
                                            password=password)
+            print(validation)
             exec_time = time() - start
             print(f'Query exec time: {exec_time}')
 
@@ -312,6 +313,8 @@ def template_registry(request):
                 components.append(pre_component_dic[i])
             print(f'Intentando registrar {components}')
             template_name, response =  asyncio.run(register_template(components, from_number=from_number))
+            i
+            print(template_name)
             if 'error' not in response.keys():
                 status = response['status']
                
@@ -321,7 +324,7 @@ def template_registry(request):
                     if status != 'PENDING':
                         break
                     
-                    status = asyncio.run(check_template_status(template_name=template_name))
+                    status = asyncio.run(check_template_status(response['id']))
                 response['status'] = 400
                 response['template_name'] = template_name
                                   
@@ -478,14 +481,20 @@ def send_messages(request):
                             counter += 1
                         wamid = messages['id']
                         
-                    
+                    print(f'Tratando de formatear el mensaje')
+                    j =0 
                     for i in message['components']:
                         if i is not None:
                             aux = i
                             if 'text' in i.keys():
-                                i['text'] = format_string(i['text'], data=df.iloc[[index],:])
-                            print(aux, i)
-                            
+                                aux['text'] = format_string(i['text'], data=df.iloc[[index],:])
+                                print('\n\n\n',aux['text'],i['text'])
+                                i = aux 
+                                message['components'][j] = aux
+                            print(i['text'])
+
+                        j += 1
+                    print(f'En teoria el mensaje ya fue formateado')      
                     print('message: ', message)
                     r_body = json.dumps(message)
                     print('insertando en la base de datos...')

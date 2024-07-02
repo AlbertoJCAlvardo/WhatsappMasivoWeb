@@ -61,6 +61,7 @@ def validate_user(u:str)->bool:
                 """
         do = DatabaseManager("sistemas")
         data = do.execute_indexed_query(query)
+        print(data)
 
         if len(data["USUARIO_ID"])>0:
             return True
@@ -90,15 +91,17 @@ def get_components(data:pd.DataFrame)-> list:
 
 def validate_login(user, password):
     try:
-
+        user = user.replace(' ', '')
+        password = password.replace(' ', '')
         do =  DatabaseManager('sistemas')
         query = f"""
                     SELECT CONTRASENA
                     FROM CL.CL_SYS_USUARIO
                     WHERE USUARIO_ID = '{user}'
                 """
-        
+        print(query)
         headers, result = do.execute_query(query)
+        print(result)
         do = DatabaseManager('sistemas')
 
         query = f"""
@@ -106,9 +109,9 @@ def validate_login(user, password):
                     FROM CL.CL_SYS_USUARIO_PROYECTO_WA
                     WHERE USUARIO = '{user}'
                 """
-        
+        print(query)
         headers, result2 = do.execute_query(query)
-        
+        print(result2)
         
         if (len(result) == 0 and len(result2) == 0):
             return 'user_not_exist'
@@ -240,11 +243,10 @@ async def send_message(number, template_name, components, from_number):
         return {'error':repr(e)}
  
     
-async def check_template_status(template_name):
+async def check_template_status(template_id):
     headers = { "Authorization": f"Bearer {settings.ACCESS_TOKEN}",
         }
-    url = f"https://graph.facebook.com/v18.0/{settings.BUSINESS_ACCOUNT_ID}/message_templates?name={template_name}"
-    
+    url = f"https://graph.facebook.com/v18.0/{template_id}/?access_token={settings.ACCESS_TOKEN}"
     try:
         async with aiohttp.ClientSession() as session:
             
@@ -256,11 +258,12 @@ async def check_template_status(template_name):
                         html = await response.text()
 
                         response = json.loads(html)
-                        print(response)
-                        if len(response['data']) > 0 :
-                            data = response["data"][0]
+                        
+                        if 'status' in response.keys():
+                            print(response['status'])
+                            data = response
                         else:
-                            print(response['data'])
+                            print('Error: ',response)
                             data = {'status':'PENDING'}
                             
                         return data["status"]
