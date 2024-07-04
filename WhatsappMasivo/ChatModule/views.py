@@ -7,7 +7,7 @@ from core.utils import validate_session, validate_user, get_user_name, validate_
 from core.formatter import format_string, format_phone_numbers, set_wa_format
 from django.views.decorators.csrf import csrf_exempt
 from core.utils import (send_message, register_template, get_components, 
-                        check_template_status, remove_rejected_template, get_image_url, get_image_from_url)
+                        check_template_status, remove_rejected_template, get_image_url, get_image_from_url, get_user_projects)
 from django.views.decorators.csrf import csrf_exempt
 from db.utils import DatabaseManager
 from core.config import settings
@@ -96,8 +96,8 @@ def whatsapp_webhook(request):
                             query = f"""
                                         SELECT DISTINCT(USUARIO) USUARIO, FECHA
                                         FROM CL.WHATSAPP_COMUNICATE V
-                                        WHERE DESTINO = '52' || {from_id[3:]}
-                                        AND ORIGEN = '{destiny[3:]}'
+                                        WHERE DESTINO LIKE '%{from_id[3:]}%'
+                                        AND ORIGEN = LIKE '%{destiny[3:]}%'
                                         ORDER BY V.FECHA DESC
 
                                     """
@@ -147,6 +147,12 @@ def chat_list(request):
         user = request.GET['user']
         page = request.GET['page']
         print(user, page)
+
+        profile_name = 'PROFILE_NAME'
+        if 'EDILAR' in get_user_projects(user):
+            profile_name = 'FACILIDAD_COBRANZA_RFC'
+
+        print(get_user_projects(user), profile_name)
         try:
             dm = DatabaseManager()
 
@@ -165,7 +171,7 @@ def chat_list(request):
                             ELSE  V.ORIGEN
                         END TEL_USUARIO,
                     
-                        FECHA, TIEMPO, USUARIO, UNREAD_MESSAGES, STATUS_CONVERSACION, PROFILE_NAME, CONTENIDO,   TIPO, FLOW, START_DATE, START_TIME
+                        FECHA, TIEMPO, USUARIO, UNREAD_MESSAGES, STATUS_CONVERSACION, {profile_name} AS PROFILE_NAME, CONTENIDO,   TIPO, FLOW, START_DATE, START_TIME
                     FROM (SELECT
                                         V.ORIGEN,
                                         V.DESTINO,
@@ -179,9 +185,11 @@ def chat_list(request):
                                             WHEN SYSDATE - V.FECHA >= 1 THEN 'INACTIVA'
                                             ELSE 'ACTIVA'
                                             END                                         STATUS_CONVERSACION,
-                                        PROFILE_NAME,
+                                         PROFILE_NAME,
+                                         
                                         CONTENIDO,
-                                        TIPO, 'RECIBIDO' FLOW
+                                        TIPO, 'RECIBIDO' FLOW,
+                                        FACILIDAD_COBRANZA_RFC 
 
                                 FROM CL.WHATSAPP_MASIVO_RESPUESTA V
                                 UNION
@@ -197,16 +205,20 @@ def chat_list(request):
                                             ELSE 'ACTIVA'
                                             END                                         STATUS_CONVERSACION,
                                         CASE WHEN '521' || SUBSTR(B.DESTINO,3,13) IN (SELECT DISTINCT(ORIGEN) FROM CL.WHATSAPP_MASIVO_RESPUESTA) THEN
+
+                                        
                                         (SELECT DISTINCT(PROFILE_NAME) FROM CL.WHATSAPP_MASIVO_RESPUESTA WHERE ORIGEN = '521' || SUBSTR(B.DESTINO,3,13))
 
                                         ELSE
                                             B.DESTINO
                                         END PROFILE_NAME,
                                         CONTENIDO,
-                                        TIPO, 'ENVIADO' FLOW
+                                        TIPO, 'ENVIADO' FLOW,
+                                        FACILIDAD_COBRANZA_RFC
 
-                                FROM CL.WHATSAPP_COMUNICATE B) V
-
+                                FROM CL.WHATSAPP_COMUNICATE B
+                                WHERE STATUS_MENSAJE != 'failed') V
+                                
 
                                 JOIN(
                                     SELECT DISTINCT(ORIGEN), TO_CHAR(MAX(START_DATE), 'MM/DD/RRRR') START_DATE, TO_CHAR(MAX(START_DATE), 'HH24:MM:SS') START_TIME
@@ -219,7 +231,7 @@ def chat_list(request):
                                         UNION
                                         SELECT DISTINCT(DESTINO) ORIGEN, MAX(FECHA) START_DATE
                                         FROM CL.WHATSAPP_COMUNICATE
-                                        WHERE USUARIO = '{user}'
+                                        WHERE USUARIO = '{user}' AND STATUS_MENSAJE != 'failed'
                                         GROUP BY DESTINO
                                     )
                                     GROUP BY ORIGEN
@@ -228,8 +240,7 @@ def chat_list(request):
                                 ON V.ORIGEN = B.ORIGEN AND V.FECHA = START_DATE AND V.TIEMPO = START_TIME
                                 WHERE V.USUARIO = '{user}' AND V.CONTENIDO IS NOT null
                                 ORDER BY FECHA DESC
-                                OFFSET ({page}- 1)  * 10 ROWS
-                                FETCH NEXT 10 ROWS ONLY
+                                
 
                                             """
             
@@ -249,65 +260,67 @@ def chat_window(request):
         user = request.GET.get('user')
         print(f'ph: {phone_number}\n\n\n, {type(phone_number)}')
         print(f'pg: {page}\n\n\n')
-        if len(phone_number) > 9:
-            if len(phone_number) == 12:
-                phone_number = phone_number[2:12]
-            if len(phone_number) == 13:
-                phone_number = phone_number[3:13]
-        print(phone_number)
-        try:
-            dm = DatabaseManager()
-            query=f"""
-                               SELECT FECHA AS datetime, TO_CHAR(FECHA, 'MM-DD-RR') FECHA, TO_CHAR(FECHA, 'HH24:MI') TIEMPO, ORIGEN, DESTINO, WAMID, CONVERSATION_ID, TIPO,
-                                    CONTENIDO, STATUS, USUARIO, 'RECIBIDO' FLOW
-                                FROM CL.WHATSAPP_MASIVO_RESPUESTA
-                                WHERE ORIGEN = '521' || '{phone_number}'
-                                UNION
-                                (SELECT FECHA AS DATETIME, TO_CHAR(FECHA, 'MM-DD-RR') FECHA,
-                                        TO_CHAR(FECHA, 'HH24:MI') TIEMPO,
-                                        ORIGEN,
-                                        DESTINO,
-                                        WAMID,
-                                        CONVERSATION_ID,
-                                        TIPO_mensaje,
-                                        MENSAJE  CONTENIDO,
-                                        STATUS_MENSAJE STATUS,
-                                        USUARIO ,
-                                        'ENVIADO' FLOW
-                                FROM CL.WHATSAPP_COMUNICATE
-                                WHERE SUBSTR(DESTINO, 3,11) = '{phone_number}' AND STATUS_MENSAJE != 'failed'
-                                
-                                )
+        if phone_number != None:
+            if len(phone_number) > 9:
+                if len(phone_number) == 12:
+                    phone_number = phone_number[2:12]
+                if len(phone_number) == 13:
+                    phone_number = phone_number[3:13]
+            print(phone_number)
+            try:
+                dm = DatabaseManager()
+                query=f"""
+                                SELECT FECHA AS datetime, TO_CHAR(FECHA, 'MM-DD-RR') FECHA, TO_CHAR(FECHA, 'HH24:MI') TIEMPO, ORIGEN, DESTINO, WAMID, CONVERSATION_ID, TIPO,
+                                        CONTENIDO, STATUS, USUARIO, 'RECIBIDO' FLOW
+                                    FROM CL.WHATSAPP_MASIVO_RESPUESTA
+                                    WHERE ORIGEN LIKE '%{phone_number}%'
+                                          AND USUARIO = '{user}'
+                                    UNION
+                                    (SELECT FECHA AS DATETIME, TO_CHAR(FECHA, 'MM-DD-RR') FECHA,
+                                            TO_CHAR(FECHA, 'HH24:MI') TIEMPO,
+                                            ORIGEN,
+                                            DESTINO,
+                                            WAMID,
+                                            CONVERSATION_ID,
+                                            TIPO_mensaje,
+                                            MENSAJE  CONTENIDO,
+                                            STATUS_MENSAJE STATUS,
+                                            USUARIO ,
+                                            'ENVIADO' FLOW
+                                    FROM CL.WHATSAPP_COMUNICATE
+                                    WHERE  DESTINO LIKE '%{phone_number}%' 
+                                          AND USUARIO = '{user}'
+                                    )
 
-                                ORDER BY DATETIME DESC
-                                OFFSET ({page} - 1)  * 30 ROWS
-                                FETCH NEXT 30 ROWS ONLY
-                             """
-            headers, data = dm.execute_query(query)
-            for i in data:
-                if isinstance(i, list):
-                    
-                    for j in range(len(i)):
+                                    ORDER BY DATETIME DESC
+                                    
+                                """
+                print(query)
+                headers, data = dm.execute_query(query)
+                for i in data:
+                    if isinstance(i, list):
+                        
+                        for j in range(len(i)):
 
-                        if isinstance(i[j], str):
-                            
-                            if '\"' in i[j]:
+                            if isinstance(i[j], str):
                                 
-                                i[j] = json.loads(i[j])
-           
-                                
+                                if '\"' in i[j]:
+                                    
+                                    i[j] = json.loads(i[j])
             
-            query_list = convert_query_dict(headers, data)
-            print(len(query_list))
+                                    
+                
+                query_list = convert_query_dict(headers, data)
+                print(len(query_list))
 
-           
+            
 
-            return HttpResponse(json.dumps(query_list), status=200)
+                return HttpResponse(json.dumps(query_list), status=200)
 
-        except Exception as e:
-            print(repr(e))
-            error_dic=  {'error':repr(e)}
-            return HttpResponse(json.dumps(error_dic), status=403)
+            except Exception as e:
+                print(repr(e))
+                error_dic=  {'error':repr(e)}
+                return HttpResponse(json.dumps(error_dic), status=403)
 
 @csrf_exempt
 def api_image(request):

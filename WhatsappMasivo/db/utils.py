@@ -24,14 +24,24 @@ class DatabaseManager:
                 connection.connect()
             
 
+            
+            rfc = 'NULL'
+            if message_data['destiny'] == settings.EDILAR_PHONE_NUMBER:
+                query = f"""
+                            SELECT  FACILIDAD_COBRANZA_RFC
+                            FROM CL.WHATSAPP_COMUNICATE
+                            WHERE DESTINO LIKE '%{message_data['origin']}%'
+                         """
+                headers, data = self.execute_query(query)
+                rfc = f"'{data[0][0]}'"
             query = f"""
                     INSERT INTO 
                     CL.WHATSAPP_MASIVO_RESPUESTA 
-                    (FECHA, ORIGEN, DESTINO, WAMID, CONVERSATION_ID, TIPO, CONTENIDO, USUARIO, STATUS, PROFILE_NAME)
+                    (FECHA, ORIGEN, DESTINO, WAMID, CONVERSATION_ID, TIPO, CONTENIDO, USUARIO, STATUS, PROFILE_NAME, FACILIDAD_COBRANZA_RFC)
 
                     VALUES (TO_DATE('{message_data['date']}', 'RRRR-MM-DD hh24:mi:ss'), '{message_data["origin"]}',
                         '{message_data['destiny']}', '{message_data['wamid']}', '{message_data['conversation_id']}', 
-                        '{message_data['message_type']}', '{message_data['content']}', '{message_data['user']}', 'unread', '{message_data['name']}')
+                        '{message_data['message_type']}', '{message_data['content']}', '{message_data['user']}', 'unread', '{message_data['name']}', {rfc},)
                 """
             result = database.execute(query)
             
@@ -48,19 +58,21 @@ class DatabaseManager:
             if connection.closed:
                 connection.connect()
            
-                
+            rfc = 'NULL'
+            if message_data['rfc'] != None:
+                rfc = f"'{message_data['rfc']}'"    
 
             query = f"""
                         INSERT INTO 
                         CL.WHATSAPP_COMUNICATE
-                        (FECHA, USUARIO, DESTINO, MENSAJE, STATUS_ENVIO, TIPO_MENSAJE, NOMBRE_MENSAJE, ORIGEN, WAMID, CONTENIDO, TIPO)
-
+                        (FECHA, USUARIO, DESTINO, MENSAJE, STATUS_ENVIO, TIPO_MENSAJE, NOMBRE_MENSAJE, ORIGEN, WAMID, CONTENIDO, TIPO, FACILIDAD_COBRANZA_RFC)
+                        
                         VALUES (TO_DATE('{message_data['date']}', 'RRRR-MM-DD hh24:mi:ss'), '{message_data["user"]}',
                           '{message_data['destiny']}', '{message_data['message']}', '{message_data['status_envio']}', 
                           '{message_data['type']}', '{message_data['message_name']}', '{message_data['origin']}', '{message_data['wamid']}',
-                          '{message_data['content']}', '{message_data['tipo']}')
+                          '{message_data['content']}', '{message_data['tipo']}',  {rfc})
                     """
-            print(query)
+           
             result = database.execute(query)
 
             

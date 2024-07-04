@@ -212,7 +212,7 @@ async def send_message(number, template_name, components, from_number):
                 }
        
         body = json.dumps(body)
-        phone_number = settings.PHONE_NUMBER
+        phone_number = settings.EDILAR_PHONE_NUMBER_ID
         if from_number == 'Red Potencia':
             phone_number = settings.REDPOTENCIA_PHONE_NUMBER_ID
             print(phone_number)
@@ -453,12 +453,12 @@ async def get_image_from_url(url):
 async def send_text_mesage_api(body, phone_number, destiny):
     try:
         phone_number_id = ""
-        print(body)
-        if '521'+phone_number == settings.PHONE_NUMBER:
+        print(phone_number)
+        if phone_number ==settings.PHONE_NUMBER:
             phone_number_id  = settings.EDILAR_PHONE_NUMBER_ID
-        if '521' + phone_number == settings.REDPOTENCIA_PHONE_NUMBER:
+        if  phone_number ==  settings.REDPOTENCIA_PHONE_NUMBER:
             phone_number_id  = settings.REDPOTENCIA_PHONE_NUMBER_ID
-
+        print(phone_number_id, settings.REDPOTENCIA_PHONE_NUMBER, settings.PHONE_NUMBER)
       
         headers = {
             f'Authorization': f'Bearer {settings.ACCESS_TOKEN}',

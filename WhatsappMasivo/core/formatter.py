@@ -5,6 +5,7 @@ def format_string(text:str,data:pd.DataFrame):
     words, tokens = [],[]
     formatted = ""
     lst = text.split("{")
+    print(f'formateando: {text} con info: {data}')
     for i in lst:
         
         if "}" in i:
@@ -12,23 +13,22 @@ def format_string(text:str,data:pd.DataFrame):
             lst2 = i.split("}")
             if len(lst2) == 1:
                 key = lst2[0]
-                if key in data.axes[0]:
-                    formatted += f"{data[key]}"
+                if key in data.columns.values:
+                    formatted += f"{data[key].values[0]}"
                 else:
                     formatted += f"{{{key}}}"
 
             if len(lst2) > 0:
                 key = lst2[0]
-                if key in data.axes[0]:
-                    formatted += f"{data[key]}"
+                if key in data.columns.values:
+                    formatted += f"{data[key].values[0]}"
                 else:
                     formatted += f"{{{key}}}"
                 formatted += f"{lst2[1]}"
             
         else:
             formatted += i
-    
-
+        
     return formatted
 
 def format_phone_numbers(numbers):

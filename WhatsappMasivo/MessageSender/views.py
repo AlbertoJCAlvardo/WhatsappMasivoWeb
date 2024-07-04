@@ -383,7 +383,7 @@ def send_messages(request):
             pre_component_dic = {}
             component_dic = {}
             from_number = body['from_number']
-            pre_components = message['components']
+            pre_components = message['components'].copy()
             header_type = message['type']
             file_data = body['file_data']
             for i in pre_components:
@@ -425,13 +425,13 @@ def send_messages(request):
             
 
             numeros_validos, numeros = format_phone_numbers(df['NUMERO_TELEFONO'])
-           
+            
             counter = 0
             print('\n\n\n\nEnviando mensajes...')
-            
+            print(f'\n\n\n\n\nnum val: {len(numeros_validos)}',numeros_validos)
             for index, row in df.iterrows():
-                
-                if row['NUMERO_TELEFONO'] in numeros_validos:
+                print('\n\n\n-----------',index)
+                if True:
                     print('\n\n\n--------- ', row)
             
                     if header_type == 'text':
@@ -482,38 +482,66 @@ def send_messages(request):
                         wamid = messages['id']
                         
                     print(f'Tratando de formatear el mensaje')
-                    j =0 
-                    for i in message['components']:
+                  
+                    n_dic = message.copy()
+                    
+                    li = n_dic['components']
+                    
+                    for ixx, i in enumerate(pre_components):
                         if i is not None:
-                            aux = i
+                            aux = i.copy()
+                            print(i)
                             if 'text' in i.keys():
-                                aux['text'] = format_string(i['text'], data=df.iloc[[index],:])
-                                print('\n\n\n',aux['text'],i['text'])
-                                i = aux 
-                                message['components'][j] = aux
-                            print(i['text'])
+                                print(df.iloc[[index]])
+                                formatiado = format_string(aux['text'], data=df.iloc[[index]])
+                                print(formatiado)
+                                aux['text'] = formatiado
+                                
+                                li[ixx] = aux
+                                
 
-                        j += 1
+                       
+                    
+                    
+                    n_dic['components'] = li
                     print(f'En teoria el mensaje ya fue formateado')      
-                    print('message: ', message)
-                    r_body = json.dumps(message)
+                    print('message: ', n_dic)
+                    
+                    r_body = json.dumps(n_dic)
                     print('insertando en la base de datos...')
-                    db.insert_message_registry(message_data={
-                        'date':datetime.now(pytz.timezone("Mexico/General")).strftime("%Y-%m-%d %H:%M:%S"),
-                        'user':body['user'],
-                        'destiny':numeros[row['NUMERO_TELEFONO']].replace('+', ''),
-                        'message': json.dumps(r_body),
-                        'status_envio':m_status,
-                        'type':'template',
-                        'message_name':template_name,
-                        'origin': get_phone_number(from_number),
-                        'wamid':wamid,
-                        'content': json.dumps(pre_component_dic),
-                        'tipo': header_type
-                    })
-                    
-                    
-                    
+                    if from_number == 'Edilar':
+                        db.insert_message_registry(message_data={
+                            'date':datetime.now(pytz.timezone("Mexico/General")).strftime("%Y-%m-%d %H:%M:%S"),
+                            'user':body['user'],
+                            'destiny':numeros[row['NUMERO_TELEFONO']].replace('+', ''),
+                            'message': r_body,
+                            'status_envio':m_status,
+                            'type':'template',
+                            'message_name':template_name,
+                            'origin': get_phone_number(from_number),
+                            'wamid':wamid,
+                            'content': json.dumps(pre_component_dic),
+                            'tipo': header_type,
+                            'rfc': row['RFC']
+                        })
+                        
+                    else:
+                       
+                        if from_number != 'Edilar':
+                            db.insert_message_registry(message_data={
+                                'date':datetime.now(pytz.timezone("Mexico/General")).strftime("%Y-%m-%d %H:%M:%S"),
+                                'user':body['user'],
+                                'destiny':numeros[row['NUMERO_TELEFONO']].replace('+', ''),
+                                'message': json.dumps(r_body),
+                                'status_envio':m_status,
+                                'type':'template',
+                                'message_name':template_name,
+                                'origin': get_phone_number(from_number),
+                                'wamid':wamid,
+                                'content': json.dumps(pre_component_dic),
+                                'tipo': header_type,
+                                'rfc': None
+                            })
                     
                     
             response = {

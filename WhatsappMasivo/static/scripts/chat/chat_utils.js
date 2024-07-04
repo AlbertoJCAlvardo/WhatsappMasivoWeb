@@ -128,7 +128,7 @@ async function send_message(){
     const message = document.getElementById('message_input').value;
     console.log(actualcc);
     
-    await axios.post('/send_text_message/', {
+    await axios.post('send_text_message/', {
         'message':message,
         'from_number': actualcc.origen,
         'phone_number': actualcc.destino,
@@ -226,6 +226,7 @@ async function add_chats(page){
 }
 
 async function showChat(page, phone_number){
+    console.log(user);
     let pages;
     let cinput = document.getElementById('chinput');
     cinput.style.display = "";
@@ -234,7 +235,8 @@ async function showChat(page, phone_number){
     
     await axios.get('/chat_window/', {
         params:{'phone_number':phone_number,
-                'page':page}
+                'page':page,
+            'user': user}
     }).then((response) => {
         console.log(response);
         if(response.status == 200){
