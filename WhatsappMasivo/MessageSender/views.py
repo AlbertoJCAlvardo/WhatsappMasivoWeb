@@ -203,6 +203,7 @@ def message_sending(request):
         if request.method == 'POST':
             filename = request.POST.get('filename', None)
             df = request.POST.get('df', None)
+           
             user = request.POST.get('user', None)
             
             print(user,filename)
@@ -212,6 +213,8 @@ def message_sending(request):
                 
                 df.head()
                 index = random.randint(0, df.iloc[:,[0]].size-1)
+
+            print( format_project_names(get_user_projects(user)))
             context = {'user':user,
                        'user_name': get_user_name(user),
                        'filename':filename,
@@ -255,104 +258,111 @@ def template_registry(request):
          if request.method ==  'POST':
             body = json.loads(request.body.decode('utf-8'))
             print('-*-*-*-*-\n\n\n', repr_dic(body))
+
+
             message = body['message']
             df = body['df']
             from_number = body['from_number']
-        
-            df = pd.read_json(df)
+            print(type(df),df)
+            auxdic = json.loads(df)
+            if message is not None and  df is not None and from_number is not None:
+                print(type(auxdic),auxdic)
+                repr_dic(auxdic)
+                print('auxiliardic sesupone ya impreso')
+                df = pd.read_json(df)
 
-            pre_component_dic = {}
-            pre_components = message['components']
-            header_type = message['type']
-            file_data =  body['file_data']
+                pre_component_dic = {}
+                pre_components = message['components']
+                header_type = message['type']
+                file_data =  body['file_data']
 
-            for i in pre_components:
-                print(i)
-                if i != None:
-                    print(i, type(i))
-                    if type(i) == 'str':
-                        i = json.loads(i)
-                    print(i['type'])
-                    pre_component_dic[i['type']] = i
+                for i in pre_components:
+                    print(i)
+                    if i != None:
+                        print(i, type(i))
+                        if type(i) == 'str':
+                            i = json.loads(i)
+                        print(i['type'])
+                        pre_component_dic[i['type']] = i
 
-            tokens_header = {}
-            if header_type != 'text':
-                
-                permisions = file_data['permisions']
+                tokens_header = {}
+                if header_type != 'text':
+                    
+                    permisions = file_data['permisions']
 
-                pre_component_dic['HEADER']['example'] = {
-                    'header_handle': permisions['resource_id']
-                }
-                
-            else:
-                
-                header_text= pre_component_dic['HEADER']['text']
-                formatted_header, tokens_header = set_wa_format(message=header_text, data=df.iloc[0])
-                
-                pre_component_dic['HEADER']['text'] = formatted_header
-                if len(list(tokens_header.keys())) > 0:
                     pre_component_dic['HEADER']['example'] = {
-                        'header_text':get_components(df[list(tokens_header.keys())])
+                        'header_handle': permisions['resource_id']
                     }
-               
-            body_message = pre_component_dic['BODY']['text']
-            formatted_body, tokens_body = set_wa_format(message=body_message, data=df.iloc[0])
-
-            print('fbody: ',formatted_body)
-            pre_component_dic['BODY']['text'] = formatted_body
-
-            if len(list(tokens_body.keys())) > 0:
-                pre_component_dic['BODY']['example'] = {
-                                    'body_text': [get_components(df[list(tokens_body.keys())])]
-                                }
-            
-
-            components = []
-            for i in pre_component_dic.keys():
-                print(i)
-                components.append(pre_component_dic[i])
-            print(f'Intentando registrar {components}')
-            template_name, response =  asyncio.run(register_template(components, from_number=from_number))
-            i
-            print(template_name)
-            if 'error' not in response.keys():
-                status = response['status']
-               
-                for _ in range(50):
-                    sleep(2)
-                    print('Esperando...')
-                    if status != 'PENDING':
-                        break
                     
-                    status = asyncio.run(check_template_status(response['id']))
-                response['status'] = 400
-                response['template_name'] = template_name
-                                  
-                if status == 'APPROVED':
-                    response['status'] = 200
-                    response['tokens'] = {'tokens_header': tokens_header, 
-                                          'tokens_body': tokens_body}
+                else:
                     
-                if status == 'REJECTED':
-                    removed = asyncio.run(remove_rejected_template(template_name=template_name))
-                    print('REJECTED')
-                return HttpResponse(json.dumps(response))
-            
-            error = response['error']
-            
-            if error['code'] == 190:
+                    header_text= pre_component_dic['HEADER']['text']
+                    formatted_header, tokens_header = set_wa_format(message=header_text, data=df.iloc[0])
+                    
+                    pre_component_dic['HEADER']['text'] = formatted_header
+                    if len(list(tokens_header.keys())) > 0:
+                        pre_component_dic['HEADER']['example'] = {
+                            'header_text':get_components(df[list(tokens_header.keys())])
+                        }
                 
-                response = {'status':'ERROR',
-                            'error': 'Fallo en Token de Acceso de Meta'}
-                return HttpResponse(json.dumps(response))
+                body_message = pre_component_dic['BODY']['text']
+                formatted_body, tokens_body = set_wa_format(message=body_message, data=df.iloc[0])
+
+                print('fbody: ',formatted_body)
+                pre_component_dic['BODY']['text'] = formatted_body
+
+                if len(list(tokens_body.keys())) > 0:
+                    pre_component_dic['BODY']['example'] = {
+                                        'body_text': [get_components(df[list(tokens_body.keys())])]
+                                    }
                 
-            if error['code'] == 80008:
+
+                components = []
+                for i in pre_component_dic.keys():
+                    print(i)
+                    components.append(pre_component_dic[i])
+                print(f'Intentando registrar {components}')
+                template_name, response =  asyncio.run(register_template(components, from_number=from_number))
+                i
+                print(template_name)
+                if 'error' not in response.keys():
+                    status = response['status']
                 
-                response = {'status':'ERROR',
-                            'error': 'Muchos Intentos, API saturada'}
-                return HttpResponse(json.dumps(response))
-            
-            response = {'status':'ERROR', 'error':'Error Desconocido'}
+                    for _ in range(50):
+                        sleep(2)
+                        print('Esperando...')
+                        if status != 'PENDING':
+                            break
+                        
+                        status = asyncio.run(check_template_status(response['id']))
+                    response['status'] = 400
+                    response['template_name'] = template_name
+                                    
+                    if status == 'APPROVED':
+                        response['status'] = 200
+                        response['tokens'] = {'tokens_header': tokens_header, 
+                                            'tokens_body': tokens_body}
+                        
+                    if status == 'REJECTED':
+                        removed = asyncio.run(remove_rejected_template(template_name=template_name))
+                        print('REJECTED')
+                    return HttpResponse(json.dumps(response))
+                
+                error = response['error']
+                
+                if error['code'] == 190:
+                    
+                    response = {'status':'ERROR',
+                                'error': 'Fallo en Token de Acceso de Meta'}
+                    return HttpResponse(json.dumps(response))
+                    
+                if error['code'] == 80008:
+                    
+                    response = {'status':'ERROR',
+                                'error': 'Muchos Intentos, API saturada'}
+                    return HttpResponse(json.dumps(response))
+                
+            response = {'status':'ERROR', 'error':'Faltan parametros'}
             return HttpResponse(json.dumps(response))
 
     except Exception as e:

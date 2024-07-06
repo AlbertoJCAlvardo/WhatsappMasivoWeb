@@ -878,14 +878,16 @@ def get_user_projects(user):
                 WHERE USUARIO = '{user}'
                 """
    
-    headers, data = dm.execute_query(query)
-    print(data)
-    return data[0]
+    data = dm.execute_indexed_query(query)
+    print(data['PROYECTOS'])
+    return data['PROYECTOS']
 
 
 def format_project_names(projects:list):
     result = []
+    print(f'formatting projects: {projects}')
     for i in projects:
+        print(i)
         if i == "EDILAR":
             result.append('Edilar')
             continue
@@ -897,6 +899,7 @@ def format_project_names(projects:list):
             continue
         else:
             result.append(i)
+        print(result)
 
     return result
 def get_phone_number(project):
