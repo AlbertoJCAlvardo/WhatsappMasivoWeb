@@ -141,7 +141,8 @@ async def register_template(components, from_number):
     baid = settings.BUSINESS_ACCOUNT_ID
     if from_number == 'Red Potencia':
         baid = settings.REDPOTENCIA_BUSINESS_ACCOUNT_ID
-    
+    if from_number == 'Correo del Maestro':
+        baid = settings.CORREO_MAESTRO_BUSINESS_ACCOUNT_ID
 
     url = f"https://graph.facebook.com/v18.0/{baid}/message_templates"
     print(url)
@@ -215,7 +216,8 @@ async def send_message(number, template_name, components, from_number):
         phone_number = settings.EDILAR_PHONE_NUMBER_ID
         if from_number == 'Red Potencia':
             phone_number = settings.REDPOTENCIA_PHONE_NUMBER_ID
-            print(phone_number)
+        if from_number == 'Correo del Maestro':
+            phone_number = settings.CORREO_MAESTRO_PHONE_NUMBER_ID
         
         async with aiohttp.ClientSession() as session:
             url = f"https://graph.facebook.com/v18.0/{phone_number}/messages"
@@ -755,7 +757,6 @@ async def get_upload_permission(file_data):
     try:
         url_upload = f"https://graph.facebook.com/v19.0/{settings.APP_ID}/uploads"
         url_upload += f'?file_length={file_data["length"]}&file_type={file_data["mime"]}&access_token={settings.ACCESS_TOKEN}'
-        print(url_upload)
 
         async with aiohttp.ClientSession() as session:
             try:
@@ -830,6 +831,8 @@ async def upload_file_api_2(file_data, from_number):
                 phone_number = settings.EDILAR_PHONE_NUMBER_ID
                 if from_number == 'Red Potencia':
                     phone_number = settings.REDPOTENCIA_PHONE_NUMBER_ID
+                if from_number == 'Correo del Maestro':
+                    phone_number = settings.CORREO_MAESTRO_PHONE_NUMBER_ID
 
                 url = f"https://graph.facebook.com/v18.0/{phone_number}/media"
                 print(url)
@@ -895,7 +898,7 @@ def format_project_names(projects:list):
             result.append('Red Potencia')
             continue
         if i == 'CORREO_DEL_MAESTRO':
-            result.append('Correo Del Maestro')
+            result.append('Correo del Maestro')
             continue
         else:
             result.append(i)
@@ -908,3 +911,5 @@ def get_phone_number(project):
         return settings.PHONE_NUMBER
     if project == 'Red Potencia':
         return settings.REDPOTENCIA_PHONE_NUMBER
+    if project == 'Correo del Maestro':
+        return settings.CORREO_MAESTRO_PHONE_NUMBER
