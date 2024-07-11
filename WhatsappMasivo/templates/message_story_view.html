@@ -1,6 +1,10 @@
 <!DOCTYPE html>
     <head>
+        {% load static %}
         <script src="{% static 'scripts/axios.min.js' %}">  </script>
+        <script src="{% static 'scripts/history.js' %}"></script>
+        <link rel="stylesheet" href="{%  static 'styles/style.css' %}">
+        <link rel="stylesheet" href="{%  static 'styles/navbarstyle.css' %}">
     </head>
     <body>
         <div id="maincontainer">
@@ -13,11 +17,33 @@
         
                     <div id="header"><p>Whatsapp Masivo</p></div>    
                     
-                    {% if user_name is not None %}
-                    <div id="nombre"><p>{{ user_name }}</p></div>
-                    {% endif %}
+                        {% if user_name is not None %}
+                        <div id="nombre"><p>{{ user_name }}</p></div>
+                        {% endif %}
+                    </div>
+                    <div id="sidebar">
+                        {% include 'bar_menu.html' with user=user session_id=session_id%}
+                    </div>
+                    <input name="user" id="user" value="{{ user }}" style="display: none;">
+                    <div class="superior-bar">
+                        <select id="number-select" class="options" name="telefono">
+                            <option value=''>Opciones</option>
+                            {% for x in empresas %}
+                                <option value='{{ x }}'>{{ x }}</option>
+                            {% endfor %}
+                            <!-- <option value="redpotencia">Red Potencia</option> --> 
+                        </select>
+                </div>
+                <div id="lowcont">
+                    <div id="table-container">
+                     
+                    
+                           
+                        
+                    </div>
                     
                 </div>
+
                 {% endblock content %}
 
         </div>

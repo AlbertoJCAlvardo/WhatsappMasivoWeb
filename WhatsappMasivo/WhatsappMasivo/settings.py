@@ -9,8 +9,10 @@ https://docs.djangoproject.com/en/1.11/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/1.11/ref/settings/
 """
+from django.urls import path
 from pathlib import Path
 import os
+
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -26,6 +28,7 @@ SECRET_KEY = 'd^b*%ngvgzkd(vuf@9(46++pl#e&2x74i&i%x@rr#)q&@_!ntj'
 DEBUG = True
 
 ALLOWED_HOSTS = ['localhost', '192.168.83.117', 'masivo.edilar.com']
+
 
 
 

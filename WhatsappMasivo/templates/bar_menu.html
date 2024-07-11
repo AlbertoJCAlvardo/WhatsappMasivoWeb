@@ -72,7 +72,11 @@
             <input type="hidden" name="session_id" value="{{ session_id }}" />
             <input type="submit" id="gotosend" style="display: none;">
           </form>
-          
+          <form action="/history" method="get">
+            <input type="hidden" name="user" value="{{ user }}" />
+            <input type="hidden" name="session_id" value="{{ session_id }}" />
+            <input type="submit" id="gotohistory" style="display: none;">
+          </form>
 
 
 

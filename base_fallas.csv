@@ -1,0 +1,2 @@
+NOMBRE_MENSAJE,FECHA,USUARIO,DESTINO,MENSAJE,RFC,RAZON_FALLA
+edilar_240708_123708,08/07/2024,RFLORES,525525605025,"{""components"": [{""type"": ""HEADER"", ""format"": ""IMAGE"", ""display_id"": ""861313972536887""}, {""type"": ""BODY"", ""text"": ""Buenas tardes, senor Erick se requiere su atencion para leer el siguiente mensaje\nGracias por su atencion""}, {""type"": ""FOOTER"", ""text"": ""No responder""}, null], ""type"": ""image"", ""buttons"": 0}",ERICK,FALLO_DE_META

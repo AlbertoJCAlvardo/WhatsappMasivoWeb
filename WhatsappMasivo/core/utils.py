@@ -913,3 +913,27 @@ def get_phone_number(project):
         return settings.REDPOTENCIA_PHONE_NUMBER
     if project == 'Correo del Maestro':
         return settings.CORREO_MAESTRO_PHONE_NUMBER
+    
+def querydic_to_df(dic:dict):
+    new_dic = dict()
+    for i in dic.keys():
+        auxdic = {}
+        for index, j in enumerate(dic[i]):
+            auxdic[f'{index}'] = j
+        new_dic[i] = auxdic
+
+    dic_string = json.dumps(new_dic)
+    return pd.read_json(dic_string)
+
+def deformat_project_name(project):
+    
+   
+    if project == "Edilar":
+       
+        return "EDILAR"
+    if project == "Red Potencia":
+        
+        return 'REDPOTENCIA'
+    if project == 'Correo del Maestro':
+        return 'CORREO_DEL_MAESTRO'
+   

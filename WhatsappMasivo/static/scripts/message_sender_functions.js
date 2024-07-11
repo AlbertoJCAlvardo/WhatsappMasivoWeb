@@ -247,6 +247,7 @@ function format_template(){
         case 'text':
             template_header['format'] = 'TEXT';
             template_header['text'] = document.getElementById('message-header').value.normalize('NFD').replace(/[\u0300-\u036f]/g,"");
+            template_header['text'] = template_header['text'].replace('\n',"");
 
         break;
         case 'image':
@@ -259,7 +260,7 @@ function format_template(){
         break;
     }
     template_body['text'] = document.getElementById('message-body').value.normalize('NFD').replace(/[\u0300-\u036f]/g,"");
-
+    template_body['text'] = template_body['text'].replace('\n\n',"\n");
     template_footer['text'] = document.getElementById('message-footer').value.normalize('NFD').replace(/[\u0300-\u036f]/g,"");
 
     if(button_list.length > 0){
@@ -370,7 +371,7 @@ async function send_messages(){
                     else{
                         setTimeout(() => {
                             showMessageScreen('Plantilla Registrada');
-                        }, 2000);
+                        }, 1000);
                         console.log('Enviando Mensajes')
                         console.log('\nFrom number: ', column_select.value);
                         message.innerHTML = '<div class="loading-message">Mensaje autorizado, enviando mensajes</div>';
@@ -393,17 +394,16 @@ async function send_messages(){
                             setTimeout(() => {
                                 showMessageScreen('Mensajes enviados!<br>Total:'+response.message_count);
             
-                            }, 3000);                
+                            }, 5000);                
                             if(response.status !== 200){
                                 quitLoadingScreen(popup);
                                 popup = showLoadingScreenMessage('loading-message">Fallo enviando los mensajes'+response.error)
                                 message.innerHTML = '<div class="loading-message">Fallo enviando los mensajes'+response.error+'</div>';
                             }
                             popup.appendChild(message)
-                            setTimeout(function(){
-                                quitLoadingScreen(popup);
-                            }, 3000);
-                    
+                            
+                            quitLoadingScreen(popup);
+                           
                         })
                         .catch(function (error){
                             quitLoadingScreen(popup);

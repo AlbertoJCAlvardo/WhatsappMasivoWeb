@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from django.template.loader import render_to_string
-from django.http import HttpRequest, HttpResponse, HttpResponseForbidden, HttpResponseBadRequest, HttpResponseRedirect, JsonResponse
+from django.http import HttpRequest, HttpResponse, HttpResponseForbidden, HttpResponseBadRequest, HttpResponseRedirect, JsonResponse, FileResponse
 import json
 from core.utils import validate_session, validate_user, get_user_name, validate_login, format_number, repr_dic
 from core.formatter import format_string, format_phone_numbers, set_wa_format
@@ -8,7 +8,7 @@ from django.views.decorators.csrf import csrf_exempt
 from core.utils import (send_message, register_template, get_components, 
                         check_template_status, remove_rejected_template, upload_file_api,
                         get_upload_permission, upload_file_api_2, get_user_projects, format_project_names,
-                        get_phone_number, send_text_mesage_api)
+                        get_phone_number, send_text_mesage_api, querydic_to_df, deformat_project_name)
 from db.utils import DatabaseManager
 from core.config import settings
 import io
@@ -445,16 +445,18 @@ def send_messages(request):
                     print('\n\n\n--------- ', row)
             
                     if header_type == 'text':
-                        header_message = pre_component_dic['HEADER']['text']
+                        pcc_d =pre_component_dic.copy()
+                        header_message = pcc_d['HEADER']['text']
                         formatted_header, tokens_header = set_wa_format(message=header_message, data=df.iloc[[index], :])
                         header_parameters = []
                         
-                        pre_component_dic['HEADER']['content'] = formatted_header
+                        pcc_d['HEADER']['content'] = formatted_header
                         for parameter in row.loc[tokens_header.keys()]:
                             header_parameters.append({
                                 'type': 'text',
                                 'text': str(parameter)
                             })
+                        print(header_parameters)
 
                       
                     formatted_body, tokens_body = set_wa_format(message=body_message, data=df.iloc[[index],:])
@@ -465,7 +467,7 @@ def send_messages(request):
                             'type': 'text',
                             'text': str(parameter)
                         })
-
+                    component_dic['HEADER']['parameters'] = header_parameters
                     component_dic['BODY']['parameters'] = body_parameters
 
                     
@@ -655,6 +657,7 @@ def send_text_message(request):
         try:
 
             body = json.loads(request.body)
+            print(body)
             to = body['phone_number']
             from_number = body['from_number']
             message  =  body['message']
@@ -705,3 +708,147 @@ def get_phone(request):
         if len(data) > 0:
             status = 200
         return HttpResponse(json.dumps(resp_dic), status=status)
+
+@csrf_exempt
+def history(request):
+    if request.method == "GET":
+        user = request.GET.get('user')
+        if user is not None:
+            projects = get_user_projects(user)
+
+           
+            context = {'user':user,
+                       'user_name': get_user_name(user),
+                       'empresas':format_project_names(get_user_projects(user))}
+            return HttpResponse(render_to_string('message_story_view.html', context=context))
+
+        HttpResponseRedirect('/login')
+
+@csrf_exempt
+def format_history(request):
+     if request.method == 'POST':
+        try:
+            body = json.loads(request.body)
+            project = body['project']
+            user = body['user']
+            project  = deformat_project_name(project)
+            ph_query = f"""
+                           
+                            SELECT TELEFONO
+                            FROM CL.CL_SYS_PROYECTO_WA
+                            WHERE PROYECTO_ID = '{project}' 
+                            
+                        """
+            dm1 = DatabaseManager('sistemas')
+            headers, data = dm1.execute_query(ph_query)
+            query = f"""
+                        SELECT NOMBRE_MENSAJE ,     
+                                CASE    
+                                    WHEN TOTAL_EN_BASE > 0 THEN TO_CHAR(TOTAL_EN_BASE) ELSE '0'
+                                END TOTAL_EN_BASE,
+                                CASE    
+                                    WHEN ENVIADOS_POR_APP > 0 THEN TO_CHAR(ENVIADOS_POR_APP) ELSE '0'
+                                END ENVIADOS_POR_APP,
+                                CASE    
+                                    WHEN ENVIOS_EXITOSOS_META > 0 THEN TO_CHAR(ENVIOS_EXITOSOS_META) ELSE '0'
+                                END ENVIOS_EXITOSOS_META,
+                                CASE    
+                                    WHEN ENVIOS_FALLIDOS_META > 0 THEN TO_CHAR(ENVIOS_FALLIDOS_META) ELSE '0'
+                                END ENVIOS_FALLIDOS_META,
+                                CASE    
+                                    WHEN TELEFONOS_NO_VALIDOS > 0 THEN TO_CHAR(TELEFONOS_NO_VALIDOS) ELSE '0'
+                                END TELEFONOS_NO_VALIDOS,  FECHA, ORIGEN, USUARIO
+                        FROM(
+                        SELECT DISTINCT(V.NOMBRE_MENSAJE) NOMBRE_MENSAJE,
+                        (SELECT COUNT(*) FROM CL.WHATSAPP_COMUNICATE WHERE  V.NOMBRE_MENSAJE = NOMBRE_MENSAJE)  TOTAL_EN_BASE,
+                        (SELECT COUNT(*) FROM CL.WHATSAPP_COMUNICATE WHERE STATUS_ENVIO = 'ok' AND V.NOMBRE_MENSAJE = NOMBRE_MENSAJE) ENVIADOS_POR_APP,
+                        (SELECT COUNT(*) FROM CL.WHATSAPP_COMUNICATE WHERE STATUS_MENSAJE <> 'failed' AND V.NOMBRE_MENSAJE = NOMBRE_MENSAJE) ENVIOS_EXITOSOS_META,
+                        (SELECT COUNT(*) FROM CL.WHATSAPP_COMUNICATE WHERE (STATUS_MENSAJE = 'failed')AND V.NOMBRE_MENSAJE = NOMBRE_MENSAJE) ENVIOS_FALLIDOS_META,
+                        (SELECT COUNT(*) FROM CL.WHATSAPP_COMUNICATE WHERE (STATUS_ENVIO <> 'ok')AND V.NOMBRE_MENSAJE = NOMBRE_MENSAJE) TELEFONOS_NO_VALIDOS,
+                            TRUNC((SELECT COUNT(*) FROM CL.WHATSAPP_COMUNICATE WHERE STATUS_MENSAJE IN ('sent', 'delivered') AND V.NOMBRE_MENSAJE = NOMBRE_MENSAJE) * 0.7,2) MONTO_POR_ENVIO,
+                        TO_CHAR(V.FECHA, 'RRRR-MM-DD') FECHA, ORIGEN, USUARIO
+                        FROM CL.WHATSAPP_COMUNICATE V
+                        WHERE ORIGEN = '{data[0][0]}'
+                        GROUP BY NOMBRE_MENSAJE, FECHA, ORIGEN, USUARIO
+                        ORDER BY FECHA DESC)
+                        ORDER BY FECHA DESC
+
+                    """
+
+
+            dm = DatabaseManager()
+            data =  dm.execute_indexed_query(query)
+            
+            df = querydic_to_df(data)
+            
+            content = df.iloc[:, :].values.tolist()
+            
+            print(len(list(df.iloc[:,[0]].values)))
+           
+            
+            response = {
+                        
+                        'headers':df.columns.to_list(),
+                        'content':content,
+                        'df':df.to_json()  
+                }
+            response = json.dumps(response)
+            return HttpResponse(response, status=200)
+
+           
+            
+        except Exception as e:
+            print(repr(e))
+            response = json.dumps({
+                'error': repr(e),
+                'status': 400
+            })
+            return HttpResponse(response, status=400)
+
+@csrf_exempt
+def delete_template(request):
+    if request.method == 'GET':
+        template_name = request.GET.get('template_name')
+        if template_name is not None:
+            server_response = asyncio.run(remove_rejected_template(template_name=template_name))
+            print(server_response)
+            return HttpResponse(json.dumps({'status':'ok', 'data':server_response}),status=200)
+        
+    return HttpResponse(json.dumps({'status':'error','error':'Bad Request'}), status=401)
+
+@csrf_exempt
+def get_message_base(request,  template_name):
+
+    if request.method == 'GET':
+            message_name= template_name
+            user = request.GET.get('user')
+            if message_name is not None:
+                
+               
+                query = f"""
+                            SELECT NOMBRE_MENSAJE, FECHA, USUARIO, DESTINO, MENSAJE, FACILIDAD_COBRANZA_RFC RFC,
+                            CASE
+                                WHEN   STATUS_ENVIO <> 'ok' THEN 'TELEFONO_NO_VALIDO'
+                                WHEN  STATUS_MENSAJE = 'failed' THEN 'FALLO_DE_META'
+                            END RAZON_FALLA
+                            FROM CL.WHATSAPP_COMUNICATE V
+                            WHERE (STATUS_MENSAJE = 'failed' OR STATUS_ENVIO <> 'ok') AND V.NOMBRE_MENSAJE = '{message_name}'
+                            
+                            ORDER BY FECHA DESC
+                        """
+
+
+                dm = DatabaseManager()
+                data =  dm.execute_indexed_query(query)
+               
+                df = querydic_to_df(data)
+                print(df)
+                df.to_csv( 'base_fallas.csv', index=None)
+                response = HttpResponse(content_type='application/force-download')
+                response['Content-Disposition'] = 'attachment; filename=%s' % f'base_fallas_{message_name}.csv'
+               
+                response.write(open('base_fallas.csv').read())
+                return response
+
+            
+    return HttpResponse(json.dumps({'error':'Falla'}),405)
