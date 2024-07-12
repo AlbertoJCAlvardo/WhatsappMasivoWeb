@@ -38,7 +38,7 @@ function check_history(){
                 let tbody = document.createElement('tbody');
                 let hdr_row = document.createElement('tr');
                 let new_headers = prep_overflow(headers, content);
-                new_headers.push('DESCARGAR_FALLIDOS');
+                new_headers.push('Descargar');
                 new_headers.forEach(header => {
                     var td  = document.createElement('td');
                     td.innerHTML = header;

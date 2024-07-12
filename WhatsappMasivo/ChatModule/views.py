@@ -7,7 +7,8 @@ from core.utils import validate_session, validate_user, get_user_name, validate_
 from core.formatter import format_string, format_phone_numbers, set_wa_format
 from django.views.decorators.csrf import csrf_exempt
 from core.utils import (send_message, register_template, get_components, 
-                        check_template_status, remove_rejected_template, get_image_url, get_image_from_url, get_user_projects)
+                        check_template_status, remove_rejected_template, get_image_url, get_image_from_url, get_user_projects, format_project_names,
+                        deformat_project_name)
 from django.views.decorators.csrf import csrf_exempt
 from db.utils import DatabaseManager
 from core.config import settings
@@ -33,17 +34,18 @@ def chat_module(request):
             print(f'user: {user}, session_id:{session_id}')
 
             if validate_user(user):
-
+                projects = get_user_projects(user)
                 context = {'user':user,
-                           'session_id':session_id}
+                           'session_id':session_id,
+                           'empresas':format_project_names(projects=projects)}
                 return HttpResponse(render_to_string('ChatModule/chatmodule.html', context=context))
             
     
         
-        return HttpResponseRedirect('/data_upload')
+        return HttpResponseRedirect('/login')
     except Exception as e:
         print(repr(e))
-        return HttpResponseRedirect('/data_upload')
+        return HttpResponseRedirect('/login')
 
 @csrf_exempt
 def whatsapp_webhook(request):
@@ -146,8 +148,22 @@ def chat_list(request):
     if request.method == 'GET':
         user = request.GET['user']
         page = request.GET['page']
-        print(user, page)
-
+        project = request.GET['project']
+        
+        print(user, page,project)
+        
+        
+        
+        project  = deformat_project_name(project)
+        ph_query = f"""
+                        
+                        SELECT TELEFONO
+                        FROM CL.CL_SYS_PROYECTO_WA
+                        WHERE PROYECTO_ID = '{project}' 
+                        
+                    """
+        dm1 = DatabaseManager('sistemas')
+        headers, data = dm1.execute_query(ph_query)
         profile_name = 'PROFILE_NAME'
         if 'EDILAR' in get_user_projects(user):
             profile_name = 'FACILIDAD_COBRANZA_RFC'
@@ -173,7 +189,7 @@ def chat_list(request):
                     
                         FECHA, TIEMPO, USUARIO, UNREAD_MESSAGES, STATUS_CONVERSACION, {profile_name} AS PROFILE_NAME, CONTENIDO,   TIPO, FLOW, START_DATE, START_TIME
                     FROM (SELECT
-                                        V.ORIGEN,
+                                        '52' || SUBSTR(V.ORIGEN,4,13) ORIGEN,
                                         V.DESTINO,
                                         TO_CHAR(V.FECHA, 'MM/DD/RRRR')                  FECHA,
                                         TO_CHAR(FECHA, 'HH24:MM:SS')                       TIEMPO,
@@ -192,6 +208,7 @@ def chat_list(request):
                                         FACILIDAD_COBRANZA_RFC 
 
                                 FROM CL.WHATSAPP_MASIVO_RESPUESTA V
+                                
                                 UNION
                                 SELECT
                                         B.DESTINO ORIGEN,
@@ -204,7 +221,7 @@ def chat_list(request):
                                             WHEN SYSDATE - B.FECHA >= 1 THEN 'INACTIVA'
                                             ELSE 'ACTIVA'
                                             END                                         STATUS_CONVERSACION,
-                                        CASE WHEN '521' || SUBSTR(B.DESTINO,3,13) IN (SELECT DISTINCT(ORIGEN) FROM CL.WHATSAPP_MASIVO_RESPUESTA) THEN
+                                        CASE WHEN '52' || SUBSTR(B.DESTINO,3,13) IN (SELECT DISTINCT(ORIGEN) FROM CL.WHATSAPP_MASIVO_RESPUESTA) THEN
 
                                         
                                         (SELECT DISTINCT(PROFILE_NAME) FROM CL.WHATSAPP_MASIVO_RESPUESTA WHERE ORIGEN = '521' || SUBSTR(B.DESTINO,3,13))
@@ -224,21 +241,24 @@ def chat_list(request):
                                     SELECT DISTINCT(ORIGEN), TO_CHAR(MAX(START_DATE), 'MM/DD/RRRR') START_DATE, TO_CHAR(MAX(START_DATE), 'HH24:MM:SS') START_TIME
                                     FROM(
 
-                                        SELECT DISTINCT(ORIGEN) ORIGEN, MAX(FECHA) START_DATE
+                                        SELECT DISTINCT('52' || SUBSTR(ORIGEN,4,13)) ORIGEN, MAX(FECHA) START_DATE
                                         FROM CL.WHATSAPP_MASIVO_RESPUESTA
-                                        WHERE USUARIO = '{user} '
+                                        WHERE USUARIO = '{user}' 
+                                         AND DESTINO = '{data[0][0]}'
+
                                         GROUP BY ORIGEN
                                         UNION
                                         SELECT DISTINCT(DESTINO) ORIGEN, MAX(FECHA) START_DATE
                                         FROM CL.WHATSAPP_COMUNICATE
                                         WHERE USUARIO = '{user}' AND STATUS_MENSAJE != 'failed'
+                                         AND ORIGEN = '{data[0][0]}'
                                         GROUP BY DESTINO
                                     )
                                     GROUP BY ORIGEN
 
                                 ) B
                                 ON V.ORIGEN = B.ORIGEN AND V.FECHA = START_DATE AND V.TIEMPO = START_TIME
-                                WHERE V.USUARIO = '{user}' AND V.CONTENIDO IS NOT NULL
+                                WHERE V.USUARIO = '{user}' AND V.CONTENIDO IS NOT NULL 
                                 ORDER BY FECHA DESC
                                 
 

@@ -73,12 +73,31 @@
 #nombre  a:hover { 
     text-decoration: none; 
     color: rgba(0,0,0,0.5);
+    background-color: rgba(0,0,0,0);
 
 
   } 
 #nombre  a:active { 
     text-decoration: none; 
 }
+td a:link { 
+    text-decoration: none; 
+    color: #056833;
+
+  } 
+td  a:visited { 
+    text-decoration: none; 
+    color: #075E54;
+  } 
+td  a:active { 
+    text-decoration: none; 
+}
+td  a:hover { 
+    text-decoration: none; 
+    color: rgba(255,255,255,1);
+    background-color: rgba(0, green, blue, 0);
+
+  } 
 #report_form{
     font-family: 'Lato';
     height: 70%;
@@ -246,6 +265,12 @@
 }
 .impar{
     background-color: #C4C4C4;
+    padding-left: 5px;
+    padding-right: 5px;
+}
+.par{
+    padding-left: 5px;
+    padding-right: 5px;
 }
 
 #tablecontainer{
@@ -277,13 +302,14 @@ table, tr, td {
     align-content: center;
     align-self: center;
     text-align: center;
+    white-space: nowrap;
     
 }
 tr :hover {
     background-color: rgba(1, 58, 24, 0.8);
 }
-.impar :hover {
-    background-color: rgba(1, 58, 24, 0.8);
+#lowcont tr:hover td{
+    background-color: rgba(1, 58, 24, 0.7);
 }
 #lowcont td, tr, table{
     font-size: 16px;

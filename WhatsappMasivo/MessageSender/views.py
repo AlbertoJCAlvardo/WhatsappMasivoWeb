@@ -759,7 +759,10 @@ def format_history(request):
                                 END ENVIOS_FALLIDOS_META,
                                 CASE    
                                     WHEN TELEFONOS_NO_VALIDOS > 0 THEN TO_CHAR(TELEFONOS_NO_VALIDOS) ELSE '0'
-                                END TELEFONOS_NO_VALIDOS,  FECHA, ORIGEN, USUARIO
+                                END ERROR_DE_DATOS_EN_BASE,
+                                CASE    
+                                    WHEN MONTO_POR_ENVIO > 0 THEN  '$\t' || TO_CHAR(MONTO_POR_ENVIO) ELSE '0'
+                                END MONTO_POR_ENVIO,  FECHA, ORIGEN, USUARIO
                         FROM(
                         SELECT DISTINCT(V.NOMBRE_MENSAJE) NOMBRE_MENSAJE,
                         (SELECT COUNT(*) FROM CL.WHATSAPP_COMUNICATE WHERE  V.NOMBRE_MENSAJE = NOMBRE_MENSAJE)  TOTAL_EN_BASE,
@@ -781,7 +784,12 @@ def format_history(request):
             dm = DatabaseManager()
             data =  dm.execute_indexed_query(query)
             
-            df = querydic_to_df(data)
+            n_data= {}
+            for i in data.keys():
+                nkey = '\t'+i.replace('_', ' ').capitalize()+'\t'
+                n_data[nkey] = data[i]
+
+            df = querydic_to_df(n_data)
             
             content = df.iloc[:, :].values.tolist()
             
@@ -830,7 +838,7 @@ def get_message_base(request,  template_name):
                 query = f"""
                             SELECT NOMBRE_MENSAJE, FECHA, USUARIO, DESTINO, MENSAJE, FACILIDAD_COBRANZA_RFC RFC,
                             CASE
-                                WHEN   STATUS_ENVIO <> 'ok' THEN 'TELEFONO_NO_VALIDO'
+                                WHEN   STATUS_ENVIO <> 'ok' THEN 'ERROR_DE_DATOS_EN_BASE'
                                 WHEN  STATUS_MENSAJE = 'failed' THEN 'FALLO_DE_META'
                             END RAZON_FALLA
                             FROM CL.WHATSAPP_COMUNICATE V

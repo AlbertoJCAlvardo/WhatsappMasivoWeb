@@ -9,13 +9,27 @@ let actualcc;
 let chat_li = [];
 let button_send;
 var active_chat; 
-
+let  number_select;
+let advise; 
+let empresa;
 let chat_list = document.getElementById('chat_list');
 let chat_box = document.getElementById('chat_box');
 let user;
 
 let options1 = {};
 let options2 = {};
+
+function select_empresa(){
+   
+    empresa = number_select.value;
+    if(empresa != ''){
+    advise.display = "none";
+    add_chats(1);
+    start();}
+    else{
+        chat_list.innerHTML = "";
+    }
+}
 
 function  handleChatIntersection(entries, observer){
     entries.forEach( entry => {
@@ -42,6 +56,7 @@ let contactloader = document.getElementById('contactloader');
 
 
 function start(){
+    
     ciclo();
 }
 
@@ -60,10 +75,11 @@ function check(){
 
 window.onload = function() {
     user = document.getElementById('user').value;
-    
+    number_select = document.getElementById('number-select');
     chat_list = document.getElementById('chat_list');
     chat_box = document.getElementById('chat_box');
-
+    number_select.onchange = select_empresa;
+    advise = document.getElementById('advise');
     options1 = {
         root: document.getElementById('chat_box'),
         rootMargin: '500px',
@@ -75,8 +91,7 @@ window.onload = function() {
         treshold: 0.1
     };
     console.log('adding');
-    add_chats(1);
-    start();
+    
 
     observer = new IntersectionObserver(handleChatIntersection, options1);
     contactObserver = new IntersectionObserver(handleContactIntersection, options2);
@@ -157,7 +172,8 @@ async function add_chats(page){
     await axios.get('/chat_list/', {
         params:{
             user:user,
-            page: chats_page
+            page: chats_page,
+            project: empresa
         }
     }).then(function (response){
         console.log(response.data);
@@ -171,6 +187,11 @@ async function add_chats(page){
                 let nombre = "";
                 if(contact['TIPO'] == 'text'){
                     label = contact['CONTENIDO']['body'];
+                    if(label == undefined){
+                        label = "Plantilla";
+                        label = contact['CONTENIDO']['BODY']['text'];
+                    }
+                    console.log(contact['CONTENIDO']);
                 }
                 if(contact['TIPO'] == 'document'){
                     label = 'Documento';
@@ -236,7 +257,8 @@ async function showChat(page, phone_number){
     await axios.get('/chat_window/', {
         params:{'phone_number':phone_number,
                 'page':page,
-            'user': user}
+            'user': user,
+        'empresa':empresa}
     }).then((response) => {
         console.log(response);
         if(response.status == 200){
@@ -414,11 +436,12 @@ class ChatWindow{
         console.log(this.messages.length);
         if(this.messages.length > 0){
             console.log('Cargando mensajes.');
+            console.log(messages);
             let cur_date = new Date(this.messages[0]['FECHA']);
             let today = new Date();
             messages.forEach(element => {
                 let f_mensaje = new Date(element['FECHA']);
-                
+               
                 if(f_mensaje.getDate() <  cur_date.getDate() && f_mensaje.getDate() <  today.getDate()){
                     
                     let cuadro_fecha = document.createElement('div');

@@ -9,7 +9,7 @@
         <link rel="stylesheet" href="{%  static 'styles/chat_style.css' %}">
         <link rel="stylesheet" href="{%  static 'styles/style.css' %}">
         <link rel="stylesheet" href="{%  static 'styles/navbarstyle.css' %}">
-
+        <link rel="shortcut icon" href="{% static 'logo.ico' %}" type="image/x-icon">
         <link rel="shortcut icon" href="{% static 'logo.ico' %}" type="image/x-icon">
         <script src="{% static 'scripts/axios.min.js' %}">  </script>
         <script src="{% static 'scripts/utils.js' %}">  </script>
@@ -19,7 +19,7 @@
         
     </head>
     <body>
-        
+
         <div id="maincontainer">
             <div id="headerbar">
                 <div id="contlogo">
@@ -33,7 +33,7 @@
             </div>
             <input name="user" value="{{ user }}" id="user" style="visibility: hidden;">
             <div class="wa-container">
-                
+              {% block content %}  
                 <div class="container">
                     <div class="leftSide">
                     
@@ -43,13 +43,23 @@
                                 <li><ion-icon name="scan-circle-outline"></ion-icon></li>
                                 <li><ion-icon name="chatbox"></ion-icon></li>
                                 <li><ion-icon name="ellipsis-vertical"></ion-icon></li>
+                                <li><select id="number-select" class="options" name="telefono">
+                                    <option value=''>Opciones</option>
+                                    {% for x in empresas %}
+                                        <option value='{{ x }}'>{{ x }}</option>
+                                    {% endfor %}
+                                    <!-- <option value="redpotencia">Red Potencia</option> --> 
+                                </select></li>
                             </ul>
+                            
+                                
+                            
                         </div>
                         
                        
 
                         <div class="chatlist" id="chat_list">
-                            
+                            <p id="advise">Seleccione un canal de comunicacion</p>
                         </div>
                     </div>
                     <div class="rightSide">
@@ -80,6 +90,7 @@
                     </div>
                 </div>
             </div>
+            {% endblock content %}
         </div>
         <input onload="start()" id="contactloader" style="visibility: none;">
     </body>
