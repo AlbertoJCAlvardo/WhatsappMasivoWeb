@@ -224,7 +224,7 @@ class DatabaseManager:
             print('Error')
             raise e
 
-    def update_seen_status(self, phone_number):
+    def update_seen_status(self, phone_number, user):
         database = create_engine(self.DATABASE_URL)
         connection = database.connect(database.url)
 
@@ -237,7 +237,7 @@ class DatabaseManager:
                         SET STATUS = 'seen'
                            
                         WHERE STATUS = 'unread'
-                        AND  ORIGEN = '{phone_number}'
+                        AND  ORIGEN = '{phone_number}' AND USUARIO = '{user}'
                     """
             result = database.execute(query)
             print('en teoria procesado')

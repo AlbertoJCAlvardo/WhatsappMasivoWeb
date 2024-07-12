@@ -148,7 +148,9 @@ def chat_list(request):
     if request.method == 'GET':
         user = request.GET['user']
         page = request.GET['page']
-        project = request.GET['project']
+        project = request.GET.get('project', None)
+        if project is None:
+            project = request.GET.get('empresa', None)
         
         print(user, page,project)
         
@@ -278,6 +280,7 @@ def chat_window(request):
         phone_number = request.GET.get('phone_number')
         page = request.GET.get('page')
         user = request.GET.get('user')
+
         print(f'ph: {phone_number}\n\n\n, {type(phone_number)}')
         print(f'pg: {page}\n\n\n')
         if phone_number != None:
@@ -410,9 +413,10 @@ def get_pages(request):
 def update_seen(request):
     if request.method == 'GET':
         try:
-            phone_number = request.GET.get('phone_number')
+            phone_number = request.GET.get('phone_number') 
+            user = request.GET.get('user')
             dm = DatabaseManager()
-            dm.update_seen_status(phone_number=phone_number)
+            dm.update_seen_status(phone_number=phone_number, user=user)
             print(f'chat {phone_number} visto.')
             return HttpResponse(json.dumps({'status':'ok'}), 200)
         except Exception as e:

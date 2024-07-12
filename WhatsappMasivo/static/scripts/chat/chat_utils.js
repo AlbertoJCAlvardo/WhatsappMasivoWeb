@@ -171,9 +171,9 @@ async function add_chats(page){
     chat_li = [];
     await axios.get('/chat_list/', {
         params:{
-            user:user,
-            page: chats_page,
-            project: empresa
+            'user':user,
+            'page': chats_page,
+            'project': empresa
         }
     }).then(function (response){
         console.log(response.data);
@@ -232,8 +232,24 @@ async function add_chats(page){
                     });
                     
                     cc.contact_chat.classList.add('active');
+                    console.log('\n\ncontacto:',contact);
+                    try{
+                        cc.removeUnread();
+                        axios.get('/update_seen/',{ params:{
+                            'phone_number':contact['ORIGEN'],
+                            'user':user,
+                            'project':project
+                        }}).then((response) => {
+                            if(response.status == 200){
+                                console.log('vistos actualizados');
+                            }
+                        }).catch((error) => {
+                            console.log('error actualizando vistos');
+                        });
                     
-                    
+                    }catch(e){
+                        console.log(e);
+                    }
                     
 
                 };
@@ -257,8 +273,8 @@ async function showChat(page, phone_number){
     await axios.get('/chat_window/', {
         params:{'phone_number':phone_number,
                 'page':page,
-            'user': user,
-        'empresa':empresa}
+                'user': user,
+                'project':empresa}
     }).then((response) => {
         console.log(response);
         if(response.status == 200){
