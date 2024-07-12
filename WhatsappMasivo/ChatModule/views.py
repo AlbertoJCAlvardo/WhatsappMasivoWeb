@@ -96,7 +96,7 @@ def whatsapp_webhook(request):
 
                             dm = DatabaseManager()
                             query = f"""
-                                        SELECT DISTINCT(USUARIO) USUARIO, FECHA
+                                        SELECT USUARIO, FECHA
                                         FROM CL.WHATSAPP_COMUNICATE V
                                         WHERE DESTINO LIKE '%{from_id[3:]}%'
                                         AND ORIGEN = LIKE '%{destiny[3:]}%'
