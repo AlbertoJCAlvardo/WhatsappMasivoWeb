@@ -146,7 +146,7 @@ async function send_message(){
     const message = document.getElementById('message_input').value;
     console.log(actualcc);
     
-    await axios.post('send_text_message/', {
+    await axios.post('/send_text_message/', {
         'message':message,
         'from_number': actualcc.origen,
         'phone_number': actualcc.destino,
