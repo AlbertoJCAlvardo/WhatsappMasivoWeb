@@ -415,8 +415,26 @@ def update_seen(request):
         try:
             phone_number = request.GET.get('phone_number') 
             user = request.GET.get('user')
+            project = request.GET.get('project', None)
+            if project is None:
+                project = request.GET.get('empresa', None)
+            
+            print(user, page,project)
+            
+            
+            
+            project  = deformat_project_name(project)
+            ph_query = f"""
+                            
+                            SELECT TELEFONO
+                            FROM CL.CL_SYS_PROYECTO_WA
+                            WHERE PROYECTO_ID = '{project}' 
+                            
+                        """
+            dm1 = DatabaseManager('sistemas')
+            headers, data = dm1.execute_query(ph_query)
             dm = DatabaseManager()
-            dm.update_seen_status(phone_number=phone_number, user=user)
+            dm.update_seen_status(phone_number=phone_number, user=user, data[0][0])
             print(f'chat {phone_number} visto.')
             return HttpResponse(json.dumps({'status':'ok'}), 200)
         except Exception as e:
