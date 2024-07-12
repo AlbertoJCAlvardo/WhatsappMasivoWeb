@@ -402,7 +402,7 @@ def send_messages(request):
                     component_dic[i['type']] = {
                         'type': i['type']
                     }
-
+            
             if header_type != 'text':
                 ar = ""
                 if header_type == 'file':
@@ -443,12 +443,13 @@ def send_messages(request):
                 print('\n\n\n-----------',index)
                 if True:
                     print('\n\n\n--------- ', row)
-            
+                    
                     if header_type == 'text':
+                        header_parameters = []
                         pcc_d =pre_component_dic.copy()
                         header_message = pcc_d['HEADER']['text']
                         formatted_header, tokens_header = set_wa_format(message=header_message, data=df.iloc[[index], :])
-                        header_parameters = []
+                        
                         
                         pcc_d['HEADER']['content'] = formatted_header
                         for parameter in row.loc[tokens_header.keys()]:
@@ -456,7 +457,8 @@ def send_messages(request):
                                 'type': 'text',
                                 'text': str(parameter)
                             })
-                        print(header_parameters)
+                            print(header_parameters)
+                        component_dic['HEADER']['parameters'] = header_parameters
 
                       
                     formatted_body, tokens_body = set_wa_format(message=body_message, data=df.iloc[[index],:])
@@ -467,7 +469,7 @@ def send_messages(request):
                             'type': 'text',
                             'text': str(parameter)
                         })
-                    component_dic['HEADER']['parameters'] = header_parameters
+                    
                     component_dic['BODY']['parameters'] = body_parameters
 
                     

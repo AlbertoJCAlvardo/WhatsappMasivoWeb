@@ -238,13 +238,13 @@ def chat_list(request):
 
                                 ) B
                                 ON V.ORIGEN = B.ORIGEN AND V.FECHA = START_DATE AND V.TIEMPO = START_TIME
-                                WHERE V.USUARIO = '{user}' AND V.CONTENIDO IS NOT null
+                                WHERE V.USUARIO = '{user}' AND V.CONTENIDO IS NOT NULL
                                 ORDER BY FECHA DESC
                                 
 
                                             """
             
-          
+            print(query)
             headers, conversations = dm.execute_query(query)
             conv_list = convert_query_dict(headers=headers, data=conversations)
             return HttpResponse(json.dumps(conv_list), status=200)
