@@ -434,7 +434,7 @@ def update_seen(request):
             dm1 = DatabaseManager('sistemas')
             headers, data = dm1.execute_query(ph_query)
             dm = DatabaseManager()
-            dm.update_seen_status(phone_number=phone_number, user=user, data[0][0])
+            dm.update_seen_status(phone_number=phone_number, user=user, from_number = data[0][0])
             print(f'chat {phone_number} visto.')
             return HttpResponse(json.dumps({'status':'ok'}), 200)
         except Exception as e:
