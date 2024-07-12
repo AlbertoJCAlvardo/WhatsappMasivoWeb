@@ -667,18 +667,18 @@ def send_text_message(request):
             
             
 
-            response = asyncio.run(send_text_mesage_api(message,from_number, to))
+            response = asyncio.run(send_text_mesage_api(message,to, from_number))
             if 'messaging_product' in response.keys():
                 db = DatabaseManager()
                 db.insert_message_registry(message_data={
                             'date':datetime.now(pytz.timezone("Mexico/General")).strftime("%Y-%m-%d %H:%M:%S"),
                             'user':user,
-                            'destiny': to,
+                            'destiny': from_number,
                             'message': message,
                             'status_envio':'ok',
                             'type':'template',
                             'message_name':None,
-                            'origin': from_number,
+                            'origin': to,
                             'wamid':response['messages'][0]['id'],
                             'content': message,
                             'tipo': 'text'

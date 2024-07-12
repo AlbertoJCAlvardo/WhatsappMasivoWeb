@@ -150,7 +150,7 @@ async function send_message(){
         'message':message,
         'from_number': actualcc.origen,
         'phone_number': actualcc.destino,
-        'user': 'user'
+        'user': user
     })
     .then((response) => {
             console.log(response.data);

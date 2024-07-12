@@ -170,7 +170,7 @@ def chat_list(request):
         if 'EDILAR' in get_user_projects(user):
             profile_name = 'FACILIDAD_COBRANZA_RFC'
 
-        print(get_user_projects(user), profile_name)
+        
         try:
             dm = DatabaseManager()
 
@@ -265,10 +265,13 @@ def chat_list(request):
                                 
 
                                             """
-            
-            print(query)
+       
             headers, conversations = dm.execute_query(query)
+            ['ORIGEN', 'TEL_EMPRESA', 'TEL_USUARIO', 'FECHA', 'TIEMPO', 'USUARIO', 'UNREAD_MESSAGES', 'STATUS_CONVERSACION', 'PROFILE_NAME', 'CONTENIDO', 'TIPO', 'FLOW', 'START_DATE', 'START_TIME']
+            
             conv_list = convert_query_dict(headers=headers, data=conversations)
+            
+            print(headers)
             return HttpResponse(json.dumps(conv_list), status=200)
         except Exception as e:
             print(repr(e))
