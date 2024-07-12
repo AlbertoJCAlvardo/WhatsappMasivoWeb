@@ -460,7 +460,9 @@ async def send_text_mesage_api(body, phone_number, destiny):
             phone_number_id  = settings.EDILAR_PHONE_NUMBER_ID
         if  phone_number ==  settings.REDPOTENCIA_PHONE_NUMBER:
             phone_number_id  = settings.REDPOTENCIA_PHONE_NUMBER_ID
-        print(phone_number_id, settings.REDPOTENCIA_PHONE_NUMBER, settings.PHONE_NUMBER)
+        if  phone_number ==  settings.CORREO_MAESTRO_PHONE_NUMBER:
+            phone_number_id  = settings.CORREO_MAESTRO_PHONE_NUMBER_ID
+        
       
         headers = {
             f'Authorization': f'Bearer {settings.ACCESS_TOKEN}',
