@@ -27,7 +27,10 @@ function select_empresa(){
     add_chats(1);
     start();}
     else{
-        chat_list.innerHTML = "";
+        chat_list.innerHTML = ' <p id="advise">Seleccione un canal de comunicacion</p>';
+        chat_box.innerHTML = "";
+        document.getElementById('chat_name').innerHTML = "";
+        
     }
 }
 

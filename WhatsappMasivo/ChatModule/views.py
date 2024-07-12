@@ -419,7 +419,7 @@ def update_seen(request):
             if project is None:
                 project = request.GET.get('empresa', None)
             
-            print(user, page,project)
+            print(user,project)
             
             
             
