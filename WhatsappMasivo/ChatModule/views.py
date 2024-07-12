@@ -18,6 +18,7 @@ import asyncio
 import random
 from time import sleep, time
 from datetime import datetime
+from datetime import timedelta
 import pytz
 # Create your views here.
 
@@ -88,7 +89,7 @@ def whatsapp_webhook(request):
                             from_id =  value['messages'][0]['from']
                             wamid = value['messages'][0]['id']
                             timestamp = value['messages'][0]['timestamp']
-                            datetimes = datetime.fromtimestamp(int(timestamp)).strftime('%Y-%m-%d %H:%M:%S')
+                            datetimes = (datetime.fromtimestamp(int(timestamp)) - timedelta(hours=8)).strftime('%Y-%m-%d %H:%M:%S') 
                             destiny = value['metadata']['display_phone_number']
                             message_type = value['messages'][0]['type']
                             content =  json.dumps(value['messages'][0][message_type])
@@ -267,7 +268,7 @@ def chat_list(request):
                                             """
        
             headers, conversations = dm.execute_query(query)
-            ['ORIGEN', 'TEL_EMPRESA', 'TEL_USUARIO', 'FECHA', 'TIEMPO', 'USUARIO', 'UNREAD_MESSAGES', 'STATUS_CONVERSACION', 'PROFILE_NAME', 'CONTENIDO', 'TIPO', 'FLOW', 'START_DATE', 'START_TIME']
+           
             
             conv_list = convert_query_dict(headers=headers, data=conversations)
             
@@ -283,6 +284,24 @@ def chat_window(request):
         phone_number = request.GET.get('phone_number')
         page = request.GET.get('page')
         user = request.GET.get('user')
+        project = request.GET.get('project', None)
+        if project is None:
+            project = request.GET.get('empresa', None)
+        
+        print(user, page,project)
+        
+        
+        
+        project  = deformat_project_name(project)
+        ph_query = f"""
+                        
+                        SELECT TELEFONO
+                        FROM CL.CL_SYS_PROYECTO_WA
+                        WHERE PROYECTO_ID = '{project}' 
+                        
+                    """
+        dm1 = DatabaseManager('sistemas')
+        headers, data = dm1.execute_query(ph_query)
 
         print(f'ph: {phone_number}\n\n\n, {type(phone_number)}')
         print(f'pg: {page}\n\n\n')
@@ -299,7 +318,7 @@ def chat_window(request):
                                 SELECT FECHA AS datetime, TO_CHAR(FECHA, 'MM-DD-RR') FECHA, TO_CHAR(FECHA, 'HH24:MI') TIEMPO, ORIGEN, DESTINO, WAMID, CONVERSATION_ID, TIPO,
                                         CONTENIDO, STATUS, USUARIO, 'RECIBIDO' FLOW
                                     FROM CL.WHATSAPP_MASIVO_RESPUESTA
-                                    WHERE ORIGEN LIKE '%{phone_number}%'
+                                    WHERE ORIGEN LIKE '%{phone_number}%' AND DESTINO = '{data[0][0]}'
                                           AND USUARIO = '{user}'
                                     UNION
                                     (SELECT FECHA AS DATETIME, TO_CHAR(FECHA, 'MM-DD-RR') FECHA,
@@ -314,7 +333,7 @@ def chat_window(request):
                                             USUARIO ,
                                             'ENVIADO' FLOW
                                     FROM CL.WHATSAPP_COMUNICATE
-                                    WHERE  DESTINO LIKE '%{phone_number}%' 
+                                    WHERE  DESTINO LIKE '%{phone_number}%' AND ORIGEN  = '{data[0][0]}'
                                           AND USUARIO = '{user}'
                                     )
 

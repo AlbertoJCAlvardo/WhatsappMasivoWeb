@@ -18,6 +18,7 @@ import random
 from time import sleep, time
 from datetime import datetime
 import pytz
+from datetime import timedelta
 # Create your views here.
 
 @csrf_exempt
@@ -671,7 +672,7 @@ def send_text_message(request):
             if 'messaging_product' in response.keys():
                 db = DatabaseManager()
                 db.insert_message_registry(message_data={
-                            'date':datetime.now(pytz.timezone("Mexico/General")).strftime("%Y-%m-%d %H:%M:%S"),
+                            'date':datetime.now(pytz.timezone("Mexico/General")).strftime("%Y-%m-%d %H:%M:%S") ,
                             'user':user,
                             'destiny': from_number,
                             'message': message,
