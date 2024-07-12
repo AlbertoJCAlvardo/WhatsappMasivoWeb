@@ -59,7 +59,7 @@ class DatabaseManager:
                 connection.connect()
            
             rfc = 'NULL'
-            if message_data['rfc'] != None:
+            if rfc in message_data.keys():
                 rfc = f"'{message_data['rfc']}'"    
 
             query = f"""
