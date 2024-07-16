@@ -136,19 +136,21 @@ def whatsapp_webhook(request):
                                  'status': status,
                                  'conversation_id': conversation_id   
                                 })
-                            
+                            print(status)
                             if status == 'failed':
                                 error = changes['value']['statuses'][0]['errors'][0]
                                 error_code = error['code']
-                                error_title = error['error_data']['title']
-                                error_message = error['error_data']['message']
+                                error_title = error['title']
+                                error_message = error['message']
                                 details = error['error_data']['details']
                                 error_info = f"Titulo: {error_title}\nMensaje: {error_message}\n\nDetalles: {details}"
+                                print(error_info)
                                 dm.update_message_error(message_data = {
                                     'wamid': wamid,
                                     'error_code':error_code,
                                     'error_info': error_info
                                 })
+
 
                                 
 

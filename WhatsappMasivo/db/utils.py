@@ -96,7 +96,6 @@ class DatabaseManager:
                         WHERE WAMID = '{message_data['wamid']}'
                     """
             result = database.execute(query)
-            connection.commit()
 
             with Session(database) as session:
                 session.commit()
@@ -120,7 +119,7 @@ class DatabaseManager:
                         WHERE WAMID = '{message_data['wamid']}'
                     """
             result = database.execute(query)
-            connection.commit()
+            
 
             with Session(database) as session:
                 session.commit()
