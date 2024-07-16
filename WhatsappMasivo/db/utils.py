@@ -26,7 +26,7 @@ class DatabaseManager:
 
             
             rfc = 'NULL'
-            if message_data['destiny'] == settings.EDILAR_PHONE_NUMBER:
+            if message_data['destiny'] == settings.PHONE_NUMBER:
                 query = f"""
                             SELECT  FACILIDAD_COBRANZA_RFC
                             FROM CL.WHATSAPP_COMUNICATE
