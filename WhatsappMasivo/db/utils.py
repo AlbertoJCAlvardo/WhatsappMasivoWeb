@@ -1,5 +1,5 @@
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import  Session
 from datetime import datetime
 from core.format import set_format,set_upper_format
 from core.config import settings
@@ -72,7 +72,7 @@ class DatabaseManager:
                           '{message_data['type']}', '{message_data['message_name']}', '{message_data['origin']}', '{message_data['wamid']}',
                           '{message_data['content']}', '{message_data['tipo']}',  {rfc})
                     """
-           
+            
             result = database.execute(query)
 
             
@@ -96,6 +96,11 @@ class DatabaseManager:
                         WHERE WAMID = '{message_data['wamid']}'
                     """
             result = database.execute(query)
+            connection.commit()
+
+            with Session(database) as session:
+                session.commit()
+
         except Exception as e:
             print(repr(e))
 
@@ -231,13 +236,16 @@ class DatabaseManager:
         if connection.closed:
             connection.connect()
         
+        if len(phone_number) == 12:
+            phone_number = phone_number[0:2] + '1' + phone_number[2:12]
+
         try:
 
             query = f"""UPDATE CL.WHATSAPP_MASIVO_RESPUESTA
                         SET STATUS = 'seen'
                            
                         WHERE STATUS = 'unread'
-                        AND  ORIGEN = '{phone_number}' AND USUARIO = '{user}' AND DESTINO = '{from_number}'
+                        AND  ORIGEN LIKE '%{phone_number}%' AND USUARIO = '{user}' AND DESTINO = '{from_number}'
                     """
             result = database.execute(query)
             print('en teoria procesado')

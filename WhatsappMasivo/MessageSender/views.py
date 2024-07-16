@@ -368,7 +368,8 @@ def template_registry(request):
 
     except Exception as e:
         print('error: ', repr(e))
-        raise e
+        response = {'status':'ERROR', 'error':F'{repr(e)}'}
+        return HttpResponse(json.dumps(response))
 
 
 @csrf_exempt
@@ -430,7 +431,7 @@ def send_messages(request):
             formatted_body, tokens_body = set_wa_format(message=body_message, data=df.iloc[0])
             
 
-            db = DatabaseManager()
+            db = DatabaseManager('sistemas')
             
             df['NUMERO_TELEFONO'] = df['NUMERO_TELEFONO'].apply(format_number)
             
@@ -646,10 +647,7 @@ def upload_file(request):
             print(repr(e))
             return HttpResponse(json.dumps({'status': 'error', 'error':repr(e)}))
 
-@csrf_exempt
-def file_test(request):
-    context = {}
-    return HttpResponse(render_to_string('file_test.html', context=context))
+
 
 @csrf_exempt
 def send_text_message(request):
@@ -668,20 +666,35 @@ def send_text_message(request):
             
             
 
-            response = asyncio.run(send_text_mesage_api(message,to, from_number))
+            response = asyncio.run(send_text_mesage_api(message,from_number, to))
+
+            m_body = {"components": 
+                      [{"type": "HEADER", "format": "TEXT", "text": "", 
+                        "content": "Apreciable {{1}} "}, 
+                        {"type": "BODY", "text": f"{message}"},
+                        {"type": "FOOTER", "text": ""}, 
+                        'null'
+                      ],
+                        "type": "text", "buttons": 0}
+            m_b =  { 
+                       "BODY": {"type": "BODY", "text": f"{message}"},
+                     
+                        "type": "text"}
+            
+            m_m = json.dumps(m_body)
             if 'messaging_product' in response.keys():
-                db = DatabaseManager()
+                db = DatabaseManager('sistemas')
                 db.insert_message_registry(message_data={
                             'date':datetime.now(pytz.timezone("Mexico/General")).strftime("%Y-%m-%d %H:%M:%S") ,
                             'user':user,
-                            'destiny': from_number,
-                            'message': message,
+                            'destiny': to,
+                            'message': m_m,
                             'status_envio':'ok',
                             'type':'template',
                             'message_name':None,
-                            'origin': to,
+                            'origin': from_number,
                             'wamid':response['messages'][0]['id'],
-                            'content': message,
+                            'content': json.dumps(m_b),
                             'tipo': 'text'
                         })
                         
@@ -782,7 +795,7 @@ def format_history(request):
                     """
 
 
-            dm = DatabaseManager()
+            dm = DatabaseManager('sistemas')
             data =  dm.execute_indexed_query(query)
             
             n_data= {}
@@ -849,7 +862,7 @@ def get_message_base(request,  template_name):
                         """
 
 
-                dm = DatabaseManager()
+                dm = DatabaseManager('sistemas')
                 data =  dm.execute_indexed_query(query)
                
                 df = querydic_to_df(data)
@@ -860,6 +873,55 @@ def get_message_base(request,  template_name):
                
                 response.write(open('base_fallas.csv').read())
                 return response
+
+            
+    return HttpResponse(json.dumps({'error':'Falla'}),405)
+
+@csrf_exempt
+def file_test(request):
+    context = {}
+    
+
+    return HttpResponse(render_to_string('file_test.html', context=context))
+
+@csrf_exempt
+def assign_email(request):
+
+    file_data = request.FILES['file']
+    extension = str(file_data).split('.')[1]
+    footer = ""
+    df = None
+
+    if extension == 'xlsx':
+        df = pd.read_excel(file_data)
+    if extension == 'csv':
+        df = pd.read_csv(file_data)
+                
+    emails  = []            
+    query = f"""
+                SELECT NOMBRE_MENSAJE, FECHA, USUARIO, DESTINO, MENSAJE, FACILIDAD_COBRANZA_RFC RFC,
+                CASE
+                    WHEN   STATUS_ENVIO <> 'ok' THEN 'ERROR_DE_DATOS_EN_BASE'
+                    WHEN  STATUS_MENSAJE = 'failed' THEN 'FALLO_DE_META'
+                END RAZON_FALLA
+                FROM CL.WHATSAPP_COMUNICATE V
+                WHERE (STATUS_MENSAJE = 'failed' OR STATUS_ENVIO <> 'ok') AND V.NOMBRE_MENSAJE = '{4}'
+                
+                ORDER BY FECHA DESC
+            """
+
+
+    dm = DatabaseManager('sistemas')
+    data =  dm.execute_indexed_query(query)
+    
+    df = querydic_to_df(data)
+    print(df)
+    df.to_csv( 'base_fallas.csv', index=None)
+    response = HttpResponse(content_type='application/force-download')
+    response['Content-Disposition'] = 'attachment; filename=%s' % f'base_fallas_{message_name}.csv'
+    
+    response.write(open('base_fallas.csv').read())
+    return response
 
             
     return HttpResponse(json.dumps({'error':'Falla'}),405)

@@ -17,8 +17,7 @@ import pandas as pd
 import asyncio
 import random
 from time import sleep, time
-from datetime import datetime
-from datetime import timedelta
+from datetime import datetime, timedelta
 import pytz
 # Create your views here.
 
@@ -89,13 +88,13 @@ def whatsapp_webhook(request):
                             from_id =  value['messages'][0]['from']
                             wamid = value['messages'][0]['id']
                             timestamp = value['messages'][0]['timestamp']
-                            datetimes = (datetime.fromtimestamp(int(timestamp)) - timedelta(hours=8)).strftime('%Y-%m-%d %H:%M:%S') 
+                            datetimes = (datetime.fromtimestamp(int(timestamp)) - timedelta(hours=6)).strftime('%Y-%m-%d %H:%M:%S') 
                             destiny = value['metadata']['display_phone_number']
                             message_type = value['messages'][0]['type']
                             content =  json.dumps(value['messages'][0][message_type])
                             
 
-                            dm = DatabaseManager()
+                            dm = DatabaseManager('sistemas')
                             query = f"""
                                         SELECT USUARIO, FECHA
                                         FROM CL.WHATSAPP_COMUNICATE V
@@ -131,7 +130,7 @@ def whatsapp_webhook(request):
                             wamid = changes['value']['statuses'][0]['id']
                             status = changes['value']['statuses'][0]['status']
 
-                            dm = DatabaseManager()
+                            dm = DatabaseManager('sistemas')
                             dm.update_message_status(message_data={
                                  'wamid': wamid,
                                  'status': status,
@@ -167,13 +166,14 @@ def chat_list(request):
                     """
         dm1 = DatabaseManager('sistemas')
         headers, data = dm1.execute_query(ph_query)
+        print(data)
         profile_name = 'PROFILE_NAME'
         if 'EDILAR' in get_user_projects(user):
             profile_name = 'FACILIDAD_COBRANZA_RFC'
 
         
         try:
-            dm = DatabaseManager()
+            dm = DatabaseManager('sistemas')
 
             query = f"""
                     SELECT   CASE
@@ -181,43 +181,43 @@ def chat_list(request):
                         ELSE V.ORIGEN
                         END ORIGEN,
                         CASE
-                            WHEN FLOW = 'ENVIADO'  THEN V.ORIGEN
+                            WHEN FLOW = 'ENVIADO'  THEN B.DESTINO
                             ELSE V.DESTINO
                         END
-                        TEL_EMPRESA, 
+                        TEL_EMPRESA,
                         CASE
-                            WHEN FLOW = 'ENVIADO' THEN V.DESTINO
+                            WHEN FLOW = 'ENVIADO' THEN B.ORIGEN
                             ELSE  V.ORIGEN
                         END TEL_USUARIO,
-                    
-                        FECHA, TIEMPO, USUARIO, UNREAD_MESSAGES, STATUS_CONVERSACION, {profile_name} AS PROFILE_NAME, CONTENIDO,   TIPO, FLOW, START_DATE, START_TIME
+
+                        FECHA, TIEMPO, USUARIO, UNREAD_MESSAGES, STATUS_CONVERSACION, FACILIDAD_COBRANZA_RFC AS PROFILE_NAME, CONTENIDO,   TIPO, FLOW, START_DATE, START_TIME
                     FROM (SELECT
                                         '52' || SUBSTR(V.ORIGEN,4,13) ORIGEN,
                                         V.DESTINO,
                                         TO_CHAR(V.FECHA, 'MM/DD/RRRR')                  FECHA,
-                                        TO_CHAR(FECHA, 'HH24:MM:SS')                       TIEMPO,
+                                        TO_CHAR(FECHA, 'HH24:MI:SS')                       TIEMPO,
                                         V.USUARIO,
                                         (SELECT COUNT(*)
-                                        FROM WHATSAPP_MASIVO_RESPUESTA
+                                        FROM CL.WHATSAPP_MASIVO_RESPUESTA
                                         WHERE ORIGEN = V.ORIGEN AND STATUS = 'unread') UNREAD_MESSAGES,
                                         CASE
                                             WHEN SYSDATE - V.FECHA >= 1 THEN 'INACTIVA'
                                             ELSE 'ACTIVA'
                                             END                                         STATUS_CONVERSACION,
                                          PROFILE_NAME,
-                                         
+
                                         CONTENIDO,
                                         TIPO, 'RECIBIDO' FLOW,
-                                        FACILIDAD_COBRANZA_RFC 
+                                        FACILIDAD_COBRANZA_RFC
 
                                 FROM CL.WHATSAPP_MASIVO_RESPUESTA V
-                                
+
                                 UNION
                                 SELECT
                                         B.DESTINO ORIGEN,
                                         B.ORIGEN DESTINO,
                                         TO_CHAR(B.FECHA, 'MM/DD/RRRR')                  FECHA,
-                                        TO_CHAR(FECHA, 'HH24:MM:SS')                       TIEMPO,
+                                        TO_CHAR(FECHA, 'HH24:MI:SS')                       TIEMPO,
                                         B.USUARIO,
                                         0 UNREAD_MESSAGES,
                                         CASE
@@ -226,7 +226,7 @@ def chat_list(request):
                                             END                                         STATUS_CONVERSACION,
                                         CASE WHEN '52' || SUBSTR(B.DESTINO,3,13) IN (SELECT DISTINCT(ORIGEN) FROM CL.WHATSAPP_MASIVO_RESPUESTA) THEN
 
-                                        
+
                                         (SELECT DISTINCT(PROFILE_NAME) FROM CL.WHATSAPP_MASIVO_RESPUESTA WHERE ORIGEN = '521' || SUBSTR(B.DESTINO,3,13))
 
                                         ELSE
@@ -238,35 +238,38 @@ def chat_list(request):
 
                                 FROM CL.WHATSAPP_COMUNICATE B
                                 WHERE STATUS_MENSAJE != 'failed') V
-                                
+
 
                                 JOIN(
-                                    SELECT DISTINCT(ORIGEN), TO_CHAR(MAX(START_DATE), 'MM/DD/RRRR') START_DATE, TO_CHAR(MAX(START_DATE), 'HH24:MM:SS') START_TIME
+                                    SELECT DISTINCT(ORIGEN), TO_CHAR(MAX(A.START_DATE), 'MM/DD/RRRR') START_DATE, TO_CHAR(MAX(A.START_DATE), 'HH24:MI:SS') START_TIME, DESTINO
                                     FROM(
 
-                                        SELECT DISTINCT('52' || SUBSTR(ORIGEN,4,13)) ORIGEN, MAX(FECHA) START_DATE
+                                        SELECT DISTINCT('52' || SUBSTR(ORIGEN,4,13)) ORIGEN, MAX(FECHA) START_DATE, DESTINO
                                         FROM CL.WHATSAPP_MASIVO_RESPUESTA
-                                        WHERE USUARIO = '{user}' 
+                                        WHERE USUARIO = '{user}'
                                          AND DESTINO = '{data[0][0]}'
 
-                                        GROUP BY ORIGEN
+                                        GROUP BY ORIGEN, FECHA, DESTINO
+
                                         UNION
-                                        SELECT DISTINCT(DESTINO) ORIGEN, MAX(FECHA) START_DATE
+                                        SELECT DISTINCT(DESTINO) ORIGEN, MAX(FECHA) START_DATE, ORIGEN DESTINO
                                         FROM CL.WHATSAPP_COMUNICATE
                                         WHERE USUARIO = '{user}' AND STATUS_MENSAJE != 'failed'
                                          AND ORIGEN = '{data[0][0]}'
-                                        GROUP BY DESTINO
-                                    )
-                                    GROUP BY ORIGEN
+                                        GROUP BY DESTINO, ORIGEN
+                                        ORDER BY START_DATE DESC
+                                    ) A
 
+                                    GROUP BY ORIGEN, DESTINO
+                                    ORDER BY START_DATE DESC, START_TIME DESC
                                 ) B
                                 ON V.ORIGEN = B.ORIGEN AND V.FECHA = START_DATE AND V.TIEMPO = START_TIME
-                                WHERE V.USUARIO = '{user}' AND V.CONTENIDO IS NOT NULL 
-                                ORDER BY FECHA DESC
+                                WHERE V.USUARIO = '{user}' AND V.CONTENIDO IS NOT NULL
+                                ORDER BY FECHA DESC, TIEMPO DESC
                                 
 
                                             """
-       
+            
             headers, conversations = dm.execute_query(query)
            
             
@@ -313,7 +316,7 @@ def chat_window(request):
                     phone_number = phone_number[3:13]
             print(phone_number)
             try:
-                dm = DatabaseManager()
+                dm = DatabaseManager('sistemas')
                 query=f"""
                                 SELECT FECHA AS datetime, TO_CHAR(FECHA, 'MM-DD-RR') FECHA, TO_CHAR(FECHA, 'HH24:MI') TIEMPO, ORIGEN, DESTINO, WAMID, CONVERSATION_ID, TIPO,
                                         CONTENIDO, STATUS, USUARIO, 'RECIBIDO' FLOW
@@ -334,7 +337,7 @@ def chat_window(request):
                                             'ENVIADO' FLOW
                                     FROM CL.WHATSAPP_COMUNICATE
                                     WHERE  DESTINO LIKE '%{phone_number}%' AND ORIGEN  = '{data[0][0]}'
-                                          AND USUARIO = '{user}'
+                                          AND USUARIO = '{user}' AND STATUS_MENSAJE != 'failed'
                                     )
 
                                     ORDER BY DATETIME DESC
@@ -396,7 +399,7 @@ def get_pages(request):
         phone_number = request.GET.get('phone_number')
         
         try:
-            dm = DatabaseManager()
+            dm = DatabaseManager('sistemas')
             headers, data = dm.execute_query(f"""
                             SELECT COUNT(*) PAGINAS
                             FROM(
@@ -455,7 +458,7 @@ def update_seen(request):
                         """
             dm1 = DatabaseManager('sistemas')
             headers, data = dm1.execute_query(ph_query)
-            dm = DatabaseManager()
+            dm = DatabaseManager('sistemas')
             dm.update_seen_status(phone_number=phone_number, user=user, from_number = data[0][0])
             print(f'chat {phone_number} visto.')
             return HttpResponse(json.dumps({'status':'ok'}), 200)

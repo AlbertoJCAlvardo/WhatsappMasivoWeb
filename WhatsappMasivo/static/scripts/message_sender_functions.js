@@ -7,7 +7,26 @@ function add_column(){
     if (text_area != document.getElementById("message-footer")){
         var select = document.getElementById('column-select');
         if (select.options[select.selectedIndex].text != "Datos"){
-            text_area.value = text_area.value + "{" + select.options[select.selectedIndex].text + "} ";
+            
+            const selectionEnd = text_area.selectionEnd; 
+            const selectionStart = text_area.selectionStart;
+            let value = text_area.value;
+            let ini  = value.substring(0, selectionStart);
+            let fin  = value.substring(selectionEnd, value.length);
+            console.log(selectionStart, selectionEnd, value);
+            console.log(value.length);
+            let chori =  "{" + select.options[select.selectedIndex].text + "}";
+
+
+            if(selectionEnd < value.length && value[selectionEnd] != ' '){
+            chori += " ";
+            }
+            if(selectionStart > 0 && value[selectionStart] != ' '){
+                chori = " "+ chori;
+            } 
+            
+            text_area.value = ini + chori+fin;
+            
         }
         else{
             alert("Seleccione una columna")
@@ -246,7 +265,7 @@ function format_template(){
     switch(switch_status){
         case 'text':
             template_header['format'] = 'TEXT';
-            template_header['text'] = document.getElementById('message-header').value.normalize('NFD').replace(/[\u0300-\u036f]/g,"");
+            template_header['text'] = document.getElementById('message-header').value;
             template_header['text'] = template_header['text'].replace('\n',"");
 
         break;
@@ -259,9 +278,9 @@ function format_template(){
             
         break;
     }
-    template_body['text'] = document.getElementById('message-body').value.normalize('NFD').replace(/[\u0300-\u036f]/g,"");
+    template_body['text'] = document.getElementById('message-body').value;
     template_body['text'] = template_body['text'].replace('\n\n',"\n");
-    template_footer['text'] = document.getElementById('message-footer').value.normalize('NFD').replace(/[\u0300-\u036f]/g,"");
+    template_footer['text'] = document.getElementById('message-footer').value;
 
     if(button_list.length > 0){
         template_buttons = {'type': 'BUTTONS',

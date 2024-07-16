@@ -95,7 +95,8 @@ window.onload = function() {
     };
     console.log('adding');
     
-
+    let message_input = document.getElementById('message_input');
+    
     observer = new IntersectionObserver(handleChatIntersection, options1);
     contactObserver = new IntersectionObserver(handleContactIntersection, options2);
 
@@ -111,7 +112,11 @@ window.onload = function() {
     };
     msg_input.oninput = send_button_change; 
     msg_input.onchange= send_button_change; 
-    
+    message_input.onkeypress = ( (e) =>{
+        if(e.key === 'Enter'){
+            button_send.click();
+        }
+    });
     
 };
 
@@ -142,23 +147,33 @@ function send_button_change(event){
 }
 
 async function send_message(){
-    
-    const message = document.getElementById('message_input').value;
+    let message_input = document.getElementById('message_input');
+    const message = message_input.value;
     console.log(actualcc);
-    
+    message_input.value = "";
+    button_send.style.enable = "false";
+    message_input.enable = "false";
     await axios.post('/send_text_message/', {
         'message':message,
-        'from_number': actualcc.origen,
-        'phone_number': actualcc.destino,
+        'from_number': actualcc.tel_empresa,
+        'phone_number': actualcc.tel_usuario,
         'user': user
     })
-    .then((response) => {
+    .then(async (response) => {
             console.log(response.data);
             if(response.status == 200){
                 
                 body = response.data;
                 if(body['status'] == 'ok'){
-                 location.reload();
+                    setTimeout(()=> {
+                        chat_box.innerHTML = "";
+                        showChat(1, actualcc.tel_usuario);
+                        chat_li.innerHTML = "";
+                        add_chats(1);
+                        button_send.style.enable = "true";
+                        
+                        message_input.enable = "true";
+                    },900);
                 }
             }
     })
@@ -188,6 +203,7 @@ async function add_chats(page){
                 
                 let label = "";
                 let nombre = "";
+                
                 if(contact['TIPO'] == 'text'){
                     label = contact['CONTENIDO']['body'];
                     if(label == undefined){
@@ -211,7 +227,7 @@ async function add_chats(page){
                 
                 
                 let cc  = new ContactChat(label, contact['TIEMPO'], contact['CONVERSATION_ID'], contact['FECHA'], 
-                    nombre, contact['UNREAD_MESSAGES'], contact['TEL_USUARIO'], contact['TEL_EMPRESA']);
+                    nombre, contact['UNREAD_MESSAGES'], contact['ORIGEN'], contact['TEL_EMPRESA'], contact['TEL_USUARIO']);
                     
                 chat_li.push(cc);
                 if(page == 1 && sw == 1){
@@ -219,7 +235,7 @@ async function add_chats(page){
                 sw  = 0;
 }
                 cc.addContactChat(chat_list);
-                cc.getElement().onclick = function(){
+                cc.getElement().onclick = async function(){
                     actualcc = cc;
                     messages_page = 1;
                     chat_box.innerHTML = "";
@@ -229,7 +245,7 @@ async function add_chats(page){
                     current_name = contact['PROFILE_NAME'];
                     
                     showChat(messages_page, contact['ORIGEN']);
-                    console,
+                    
                     chat_list.childNodes.forEach(chat => {
                         chat.classList.remove('active');
                     });
@@ -237,11 +253,12 @@ async function add_chats(page){
                     cc.contact_chat.classList.add('active');
                     console.log('\n\ncontacto:',contact);
                     try{
+                        console.log('Removiendo vistos');
                         cc.removeUnread();
-                        axios.get('/update_seen/',{ params:{
+                        await axios.get('/update_seen/',{ params:{
                             'phone_number':contact['ORIGEN'],
                             'user':user,
-                            'project':project
+                            'project':empresa
                         }}).then((response) => {
                             if(response.status == 200){
                                 console.log('vistos actualizados');
@@ -514,7 +531,7 @@ class ChatWindow{
 
 
 class ContactChat{
-    constructor(content, sent_hour, chat_id, last_message_time, name, unread_messages, origen, destino){
+    constructor(content, sent_hour, chat_id, last_message_time, name, unread_messages, origen, tel_empresa, tel_usuario){
         this.content = content;
         this.sent_hour = sent_hour;
         this.chat_id = chat_id;
@@ -522,7 +539,8 @@ class ContactChat{
         this.datetime = new Date(last_message_time);
         this.contact_chat = null;
         this.origen = origen;
-        this.destino = destino;
+        this.tel_empresa = tel_empresa;
+        this.tel_usuario = tel_usuario;
         if(unread_messages != ''){
             this.unread_messages = parseInt(unread_messages); 
         }
