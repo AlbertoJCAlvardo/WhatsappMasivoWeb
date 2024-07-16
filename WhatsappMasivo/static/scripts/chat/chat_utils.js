@@ -229,7 +229,7 @@ async function send_message(){
 };
 
 async function add_chats(page){
-    
+    total_unread = 0;
     console.log(user);
     chat_li = [];
     await axios.get('/chat_list/', {
@@ -240,15 +240,21 @@ async function add_chats(page){
         }
     }).then(function (response){
         console.log(response.data);
-        total_unread = 0;
+        
         if(response.status == 200){
             const data = response['data'];
             let sw = 1;
             data.forEach(contact => {
                 
-                total_unread += parseInt(contact['UNREAD_MESSAGES']);
+                let unread = 0;
+                if(contact['UNREAD_MESSAGES'] == ''){
+                    contact['UNREAD_MESSAGES'] = 0;
+                }
+                console.log(total_unread, contact['UNREAD_MESSAGES']);
+                total_unread = total_unread + parseInt(contact['UNREAD_MESSAGES']);
                 let label = "";
                 let nombre = "";
+                
                 
                 if(contact['TIPO'] == 'text'){
                     label = contact['CONTENIDO']['body'];

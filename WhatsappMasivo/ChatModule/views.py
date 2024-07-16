@@ -88,7 +88,7 @@ def whatsapp_webhook(request):
                             from_id =  value['messages'][0]['from']
                             wamid = value['messages'][0]['id']
                             timestamp = value['messages'][0]['timestamp']
-                            datetimes = (datetime.fromtimestamp(int(timestamp)) - timedelta(hours=6)).strftime('%Y-%m-%d %H:%M:%S') 
+                            datetimes = datetime.fromtimestamp(int(timestamp))
                             destiny = value['metadata']['display_phone_number']
                             message_type = value['messages'][0]['type']
                             content =  json.dumps(value['messages'][0][message_type])
@@ -113,7 +113,7 @@ def whatsapp_webhook(request):
                             if len(dta) > 0:
                                 user = dta[0][0]
                             
-                            dm.insert_message_response(message_data={
+                            result = dm.insert_message_response(message_data={
                                     'date': datetimes,
                                     'origin': from_id,
                                     'wamid': wamid,
@@ -124,8 +124,8 @@ def whatsapp_webhook(request):
                                     'name':profile_name,
                                     'user': user
                                 })
-                        
-                            
+
+                            print(result)
 
                         if 'statuses' in changes['value'].keys():
                             wamid = changes['value']['statuses'][0]['id']
@@ -563,7 +563,7 @@ def chat_lookup(request):
 
             dm = DatabaseManager('sistemas')
             headers, data = dm.execute_query(query)
-            print('unread',data[0][''])
+            
             response = {'UNREAD_MESSAGES':data[0][0]}
 
             return HttpResponse(json.dumps(response), status = 200)
