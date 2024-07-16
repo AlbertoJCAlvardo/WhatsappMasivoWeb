@@ -103,8 +103,9 @@ def whatsapp_webhook(request):
                                         ORDER BY V.FECHA DESC
 
                                     """
+                            
                             headers, dta = dm.execute_query(query=query)
-                           
+                            print('usuario obtenido')
                             user = None
 
 
@@ -169,8 +170,6 @@ def chat_list(request):
         if project is None:
             project = request.GET.get('empresa', None)
         
-        print(user, page,project)
-        
         
         
         project  = deformat_project_name(project)
@@ -183,7 +182,7 @@ def chat_list(request):
                     """
         dm1 = DatabaseManager('sistemas')
         headers, data = dm1.execute_query(ph_query)
-        print(data)
+       
         profile_name = 'PROFILE_NAME'
         if 'EDILAR' in get_user_projects(user):
             profile_name = 'FACILIDAD_COBRANZA_RFC'
@@ -483,3 +482,91 @@ def update_seen(request):
             error = repr(e)
             print('Hubo pedos', error)
             return HttpResponse(json.dumps({'error':error}))
+        
+@csrf_exempt
+def contact_lookup(request):
+    if request.method == 'GET':
+        try:
+            user = request.GET['user']
+            page = request.GET['page']
+            project = request.GET.get('project', None)
+            if project is None:
+                project = request.GET.get('empresa', None)
+            
+            
+            
+            project  = deformat_project_name(project)
+            ph_query = f"""
+                            
+                            SELECT TELEFONO
+                            FROM CL.CL_SYS_PROYECTO_WA
+                            WHERE PROYECTO_ID = '{project}' 
+                            
+                        """
+            dm1 = DatabaseManager('sistemas')
+            headers, data = dm1.execute_query(ph_query)
+            query = f"""
+                                            SELECT CASE 
+                                                        WHEN UNREAD_MESSAGES = 0 THEN '0'
+                                                        ELSE TO_CHAR(UNREAD_MESSAGES) 
+                                                    END UNREAD_MESSAGES
+                                            FROM(
+                                            SELECT COUNT(*) UNREAD_MESSAGES
+                                            FROM CL.WHATSAPP_MASIVO_RESPUESTA
+                                            WHERE  STATUS = 'unread' and DESTINO LIKE '%{data[0][0]}%'  
+                                                   AND USUARIO = '{user}')
+                """
+            
+            dm = DatabaseManager('sistemas')
+            headers, data = dm.execute_query(query)
+            response = {'UNREAD_MESSAGES':data[0][0]}
+
+            return HttpResponse(json.dumps(response), status = 200)
+        except Exception as e:
+            print(repr(e))
+            return HttpResponse(json.dumps({'error':f'{repr(e)}'}), status = 500)
+        
+@csrf_exempt
+def chat_lookup(request):
+    if request.method == 'GET':
+        try:
+            user = request.GET['user']
+            page = request.GET['page']
+            phone_number = request.GET['phone_number']
+            project = request.GET.get('project', None)
+            if project is None:
+                project = request.GET.get('empresa', None)
+            
+            
+            
+            project  = deformat_project_name(project)
+            ph_query = f"""
+                            
+                            SELECT TELEFONO
+                            FROM CL.CL_SYS_PROYECTO_WA
+                            WHERE PROYECTO_ID = '{project}' 
+                            
+                        """
+            dm1 = DatabaseManager('sistemas')
+            headers, data = dm1.execute_query(ph_query)
+            query = f"""                    SELECT CASE 
+                                                        WHEN UNREAD_MESSAGES = 0 THEN '0'
+                                                        ELSE TO_CHAR(UNREAD_MESSAGES) 
+                                                    END UNREAD_MESSAGES
+                                            FROM(
+                                            SELECT COUNT(*) UNREAD_MESSAGES
+                                            FROM CL.WHATSAPP_MASIVO_RESPUESTA
+                                            WHERE   STATUS = 'unread' and DESTINO = '{data[0][0]}'  
+                                                    AND USUARIO = '{user}' AND ORIGEN = '{phone_number}'
+                                            )
+                """
+
+            dm = DatabaseManager('sistemas')
+            headers, data = dm.execute_query(query)
+            print('unread',data[0][''])
+            response = {'UNREAD_MESSAGES':data[0][0]}
+
+            return HttpResponse(json.dumps(response), status = 200)
+        except Exception as e:
+            print(repr(e))
+            return HttpResponse(json.dumps({'error':f'{repr(e)}'}), status = 500)

@@ -34,6 +34,7 @@ class DatabaseManager:
                          """
                 headers, data = self.execute_query(query)
                 rfc = f"'{data[0][0]}'"
+                print('rfc obtenido')
             query = f"""
                     INSERT INTO 
                     CL.WHATSAPP_MASIVO_RESPUESTA 
@@ -41,8 +42,9 @@ class DatabaseManager:
 
                     VALUES (TO_DATE('{message_data['date']}', 'RRRR-MM-DD hh24:mi:ss'), '{message_data["origin"]}',
                         '{message_data['destiny']}', '{message_data['wamid']}', '{message_data['conversation_id']}', 
-                        '{message_data['message_type']}', '{message_data['content']}', '{message_data['user']}', 'unread', '{message_data['name']}', {rfc},)
+                        '{message_data['message_type']}', '{message_data['content']}', '{message_data['user']}', 'unread', '{message_data['name']}', {rfc})
                 """
+            print(query)
             result = database.execute(query)
             
         except Exception as e:

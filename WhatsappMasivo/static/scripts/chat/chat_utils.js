@@ -15,7 +15,7 @@ let empresa;
 let chat_list = document.getElementById('chat_list');
 let chat_box = document.getElementById('chat_box');
 let user;
-
+let total_unread = 0;
 let options1 = {};
 let options2 = {};
 
@@ -63,16 +63,61 @@ function start(){
     ciclo();
 }
 
+
+
 function ciclo(){
-    setInterval(check, 30000);
+    setInterval(check, 1200);
+}
+
+
+async function contact_lookup(){
+    await axios.get('/contact_lookup/',{
+        params:{
+            'user':user,
+            'page': chats_page,
+            'project': empresa
+        }
+    }).then((response) => {
+        if(response.status == 200){
+            const new_unread = parseInt(response.data['UNREAD_MESSAGES']);
+            console.log(response);
+            console.log(total_unread, new_unread);
+            if(new_unread > total_unread){
+                add_chats(1);
+                
+            }
+        }
+    }).catch((error) => {
+        console.log(error);
+    });
+}
+async function chat_lookup(){
+    await axios.get('/chat_lookup/',{
+        params:{
+            'user':user,
+            'page': chats_page,
+            'project': empresa,
+            'phone_number':actualcc.tel_usuario
+        }
+    }).then((response) => {
+        if(response.status == 200){
+            const new_unread = parseInt(response.data['UNREAD_MESSAGES']);
+            console.log(total_unread, new_unread);
+            if(new_unread > total_unread){
+                showChat(1, actualcc.phone_number);
+                
+            }
+        }
+    }).catch((error) => {
+        console.log(error);
+    });
 }
 
 function check(){   
-    let d = new Date();
-    console.log(d.toTimeString());
-    for(var i = 1; i<= contacts_page; i++){
-        add_chats(i);
+    if(actualcc != null){
+        chat_lookup();
     }
+    contact_lookup();
     ciclo;
 }
 
@@ -195,12 +240,13 @@ async function add_chats(page){
         }
     }).then(function (response){
         console.log(response.data);
+        total_unread = 0;
         if(response.status == 200){
             const data = response['data'];
             let sw = 1;
             data.forEach(contact => {
                 
-                
+                total_unread += parseInt(contact['UNREAD_MESSAGES']);
                 let label = "";
                 let nombre = "";
                 
@@ -536,7 +582,7 @@ class ContactChat{
         this.sent_hour = sent_hour;
         this.chat_id = chat_id;
         this.name = name;
-        this.datetime = new Date(last_message_time);
+        this.datetime = new Date(last_message_time + " " + sent_hour);
         this.contact_chat = null;
         this.origen = origen;
         this.tel_empresa = tel_empresa;
@@ -550,6 +596,7 @@ class ContactChat{
     }
 
     getDate(){
+        console.log("Last message date ", this.datetime);
         let datetime = this.datetime;
         const date = this.datetime.toLocaleDateString('es-MX', { year: "numeric", month: "numeric", day: "numeric" });
         const today = (new Date()).toLocaleDateString('es-MX', { year: "numeric", month: "numeric", day: "numeric" });
@@ -628,6 +675,7 @@ class ContactChat{
         let details = this.contact_chat.getElementsByClassName('details')[0];
         let message_p = details.getElementsByClassName('message_p')[0];
         let b = message_p.getElementsByTagName('b')[0];
+        this.unread_messages = 0;
         if(message_p.getElementsByTagName('b').length > 0){
             message_p.removeChild(b);
             this.contact_chat.classList.remove('unread');

@@ -20,7 +20,7 @@ from MessageSender.views import (index, login, data_upload, message_sending, che
                                  template_registry, upload_file, format_table, send_text_message,
                                  history, delete_template, format_history, get_message_base)
 from ChatModule.views import (chat_module, whatsapp_webhook, chat_window, chat_list, api_image, get_pages,
-                              update_seen)
+                              update_seen, chat_lookup, contact_lookup)
 
 urlpatterns = [
     path('', index),
@@ -46,6 +46,7 @@ urlpatterns = [
     path('delete_template/', delete_template),
     path('format_history/', format_history),
     path('get_message_base/<str:template_name>', get_message_base,name='get_message_base'),
-    
+    path('contact_lookup/', contact_lookup),
+    path('chat_lookup/', chat_lookup),
 ]
  
