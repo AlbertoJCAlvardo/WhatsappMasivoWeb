@@ -89,7 +89,8 @@ def whatsapp_webhook(request):
                             wamid = value['messages'][0]['id']
                             timestamp = value['messages'][0]['timestamp']
                             datetimes = datetime.fromtimestamp(int(timestamp))
-                            if datetime.today(pytz.timezone("Mexico/General")).hour != datetimes.hour or (datetime.today().minute != datetimes.minute >= 5):
+                            td = datetime.now(pytz.timezone("Mexico/General"))
+                            if td.hour != datetimes.hour or (td.minute != datetimes.minute >= 5):
                                 
                                 datetimes = datetime.fromtimestamp(int(timestamp)) - timedelta(hours=6)
                             destiny = value['metadata']['display_phone_number']
