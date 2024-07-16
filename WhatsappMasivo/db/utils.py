@@ -104,6 +104,30 @@ class DatabaseManager:
         except Exception as e:
             print(repr(e))
 
+    def update_message_error(self, message_data):
+        database = create_engine(self.DATABASE_URL)
+        connection = database.connect(database.url)
+
+        if connection.closed:
+            connection.connect()
+        
+        try:
+
+            query = f""" 
+                        UPDATE CL.WHATSAPP_COMUNICATE 
+                        SET FALLO_META = '{message_data['error_info']}',
+                            CODIGO_FALLO_META = '{message_data['error_code']}'
+                        WHERE WAMID = '{message_data['wamid']}'
+                    """
+            result = database.execute(query)
+            connection.commit()
+
+            with Session(database) as session:
+                session.commit()
+
+        except Exception as e:
+            print(repr(e))
+
     def check_db_connected(self):
         try:
             database = create_engine(self.DATABASE_URL)

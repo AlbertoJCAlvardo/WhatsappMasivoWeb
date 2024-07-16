@@ -342,7 +342,7 @@ async function send_messages(){
         formData.append('from_number', column_select.value)
         await axios.post('/upload_file/', formData,
             {headers: {'Content-Type':'multipart/form-data'}}
-        ).then((response) => {
+        ).then(async (response) => {
             response = response['data'];
             console.log('Uploaded file')
             console.log(response);
@@ -352,7 +352,7 @@ async function send_messages(){
                 file_switch = 0;
             } 
             else{
-                 axios.post('/register_template/', 
+                 await axios.post('/register_template/', 
                     { 
                         message:{'components': components,
                                 'type': switch_status,
@@ -363,7 +363,7 @@ async function send_messages(){
                         from_number: column_select.value,
                         timeout: 50000
                     }, 
-                    ).then(function (response){
+                    ).then(async function (response){
                     response = response['data'];
                     
                     status = response['status'];
@@ -388,13 +388,13 @@ async function send_messages(){
                         }, 5000);
                     }
                     else{
-                        setTimeout(() => {
+                        setTimeout(async () => {
                             showMessageScreen('Plantilla Registrada');
                         }, 1000);
                         console.log('Enviando Mensajes')
                         console.log('\nFrom number: ', column_select.value);
                         message.innerHTML = '<div class="loading-message">Mensaje autorizado, enviando mensajes</div>';
-                        axios.post('/send_messages/', {
+                        await axios.post('/send_messages/', {
                             df: df,
                             template_name:template_name,
                             message:{'components': components,
@@ -456,7 +456,7 @@ async function send_messages(){
                 file_data: file_data,
                 from_number: column_select.value
             }
-            ).then(function (response){
+            ).then(async function (response){
             response = response['data'];
             
             status = response['status'];
@@ -484,7 +484,7 @@ async function send_messages(){
                 console.log('Enviando Mensajes')
                 console.log('\nFrom number: ', column_select.value);
                 message.innerHTML = '<div class="loading-message">Mensaje autorizado, enviando mensajes</div>';
-                axios.post('/send_messages/', {
+                await axios.post('/send_messages/', {
                     df: df,
                     template_name:template_name,
                     message:{'components': components,
