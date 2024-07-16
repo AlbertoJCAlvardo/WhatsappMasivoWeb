@@ -89,6 +89,8 @@ def whatsapp_webhook(request):
                             wamid = value['messages'][0]['id']
                             timestamp = value['messages'][0]['timestamp']
                             datetimes = datetime.fromtimestamp(int(timestamp))
+                            if datetime.today().hour != datetimes.hour:
+                                datetimes = datetime.fromtimestamp(int(timestamp)) - timedelta(hours=6)
                             destiny = value['metadata']['display_phone_number']
                             message_type = value['messages'][0]['type']
                             content =  json.dumps(value['messages'][0][message_type])
