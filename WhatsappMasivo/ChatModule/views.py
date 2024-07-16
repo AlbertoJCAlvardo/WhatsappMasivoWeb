@@ -105,7 +105,7 @@ def whatsapp_webhook(request):
                                     """
                             
                             headers, dta = dm.execute_query(query=query)
-                            print('usuario obtenido')
+                            
                             user = None
 
 
