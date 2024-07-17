@@ -49,6 +49,7 @@ class DatabaseManager:
             connection.close()
         
         except Exception as e:
+            connection.close()
             print(repr(e))
 
     
@@ -81,6 +82,7 @@ class DatabaseManager:
             return result
 
         except Exception as e:
+            connection.close()
             raise(e)
 
     def update_message_status(self, message_data):
@@ -104,6 +106,7 @@ class DatabaseManager:
                 session.commit()
 
         except Exception as e:
+            connection.close()
             print(repr(e))
 
     def update_message_error(self, message_data):
@@ -128,6 +131,7 @@ class DatabaseManager:
                 session.commit()
             connection.close()
         except Exception as e:
+            connection.close()
             print(repr(e))
 
     def check_db_connected(self):
@@ -141,6 +145,7 @@ class DatabaseManager:
             print('Database connected succesfully')
 
         except Exception as e:
+            connection.close()
             print('Error; traceback >')
             raise e
         
@@ -157,6 +162,7 @@ class DatabaseManager:
 
             print('Database disconnected succesfully')
         except Exception as e:
+            
             raise e
 
  
@@ -192,6 +198,7 @@ class DatabaseManager:
                                 )
                         data.append(row_item)
                     except Exception as e:
+                        cn.close()
                         print('traceback ', index, ': >',e)
                         pass
 
@@ -201,6 +208,7 @@ class DatabaseManager:
                 return headers, data
 
         except Exception as e:
+            connection.close()
             print('Error')
             raise e
     
@@ -235,6 +243,7 @@ class DatabaseManager:
                                 )
                         data.append(row_item)
                     except Exception as e:
+                        cn.close()
                         print('traceback ', index, ': >',e)
                         pass
 
@@ -252,6 +261,7 @@ class DatabaseManager:
                 return dic
 
         except Exception as e:
+            connection.close()
             print('Error')
             raise e
 
@@ -276,7 +286,9 @@ class DatabaseManager:
             result = database.execute(query)
             print('en teoria procesado')
             result = database.execute("COMMIT")
+            connection.close()
         except Exception as e:
+            connection.close()
             print(repr(e))
 
 
