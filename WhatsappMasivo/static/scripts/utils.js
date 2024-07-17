@@ -1,11 +1,14 @@
-function showMessageScreen(message){
+function showMessageScreen(message, timeout){
+    if(timeout == null){
+        timeout = 1000;
+    }
     console.log(message);
     let maincontainer = document.body;
     let popup = document.createElement('null');
     var nmessage = document.createElement('null');
 
     popup.innerHTML =  '<div class="popup-window"></div>'
-    nmessage.innerHTML = '<div class="loading-message"><p>'+message.toString()+'</p></div>';
+    nmessage.innerHTML = '<div class="loading-message">'+message.toString()+'</div>';
     
     maincontainer.appendChild(popup);
     
@@ -18,7 +21,7 @@ function showMessageScreen(message){
         maincontainer.removeChild(popup);
  
         
-    }, 3500)
+    }, timeout)
 }
 
 function showLoadingScreen(){
@@ -27,8 +30,10 @@ function showLoadingScreen(){
     let popup = document.createElement('div')
     let aux = document.createElement('div')
     let nmessage = document.createElement('div');
+    let lbox = document.createElement('div');
     aux.classList.add("loader");
     popup.classList.add("popup-window");
+    lbox.classList.add("loading-box");
     nmessage.classList.add("loading-message");
     
     nmessage.innerHTML = '<p>Cargando...</p';
@@ -49,8 +54,10 @@ function showLoadingScreenMessage(message){
     let popup = document.createElement('div')
     let aux = document.createElement('div')
     let nmessage = document.createElement('div');
-    let p = document.createElement('p');
+    let p = document.createElement('div');
+    let lbox = document.createElement('div');
     p.innerHTML = message;
+    lbox.classList.add("loading-box");
     nmessage.appendChild(p);
 
     aux.classList.add('loader');
@@ -60,8 +67,8 @@ function showLoadingScreenMessage(message){
     
     
     maincontainer.appendChild(popup);
-    
-    popup.appendChild(aux);
+    lbox.appendChild(aux);
+    popup.appendChild(lbox);
     popup.appendChild(nmessage);
     
     popup.classList.add('open-popup');

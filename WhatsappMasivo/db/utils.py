@@ -44,9 +44,10 @@ class DatabaseManager:
                         '{message_data['destiny']}', '{message_data['wamid']}', '{message_data['conversation_id']}', 
                         '{message_data['message_type']}', '{message_data['content']}', '{message_data['user']}', 'unread', '{message_data['name']}', {rfc})
                 """
-            print(query)
+            
             result = database.execute(query)
-            print(result)
+            connection.close()
+        
         except Exception as e:
             print(repr(e))
 
@@ -74,9 +75,9 @@ class DatabaseManager:
                           '{message_data['type']}', '{message_data['message_name']}', '{message_data['origin']}', '{message_data['wamid']}',
                           '{message_data['content']}', '{message_data['tipo']}',  {rfc})
                     """
-            print(query)
+            
             result = database.execute(query)
-            print(result)
+            connection.close()
             return result
 
         except Exception as e:
@@ -125,7 +126,7 @@ class DatabaseManager:
 
             with Session(database) as session:
                 session.commit()
-
+            connection.close()
         except Exception as e:
             print(repr(e))
 

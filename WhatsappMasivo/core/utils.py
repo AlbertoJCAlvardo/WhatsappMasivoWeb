@@ -23,23 +23,23 @@ def format_number(number):
 
 def validate_session(session_id)->bool:
     try:
-        print('dbuser = sistemas')
+        
         do = DatabaseManager('sistemas')
         
-        print(session_id)
+        
         query =f"""
                     SELECT count(*) no_sesiones
                     FROM  SYS.V_$session
                     WHERE sid||audsid = '{str(session_id)}' 
                 """
         data = do.execute_indexed_query(query)
-        print(data)
+        
         if data["NO_SESIONES"][0] == "0" or data["NO_SESIONES"][0] == "":
             query =f"""
                     select pkg_general.f_sesion() from dual
                 """
             data = do.execute_indexed_query(query)
-            print(data)
+          
 
 
             return False
@@ -61,7 +61,7 @@ def validate_user(u:str)->bool:
                 """
         do = DatabaseManager("sistemas")
         data = do.execute_indexed_query(query)
-        print(data)
+
 
         if len(data["USUARIO_ID"])>0:
             return True
@@ -145,7 +145,7 @@ async def register_template(components, from_number):
         baid = settings.CORREO_MAESTRO_BUSINESS_ACCOUNT_ID
 
     url = f"https://graph.facebook.com/v18.0/{baid}/message_templates"
-    print(url)
+    
     body = {"name": template_name,
             "language": "es",
             "category": "MARKETING",
@@ -154,21 +154,20 @@ async def register_template(components, from_number):
     
         
     body = json.dumps(body)
-    print("body", body)
+    
     try:
         async with aiohttp.ClientSession() as session:
             
             try:
                 async with session.post(url, data=body, headers=headers) as response:
                     
-                        print("Status:", response.status)
-                        print("Content-type:", response.headers["content-type"])
+                       
 
                         html = await response.text()
                         response = json.loads(html)
                         
                         
-                        print(response)
+                    
                         return template_name, response
                     
                         
@@ -221,17 +220,13 @@ async def send_message(number, template_name, components, from_number):
         
         async with aiohttp.ClientSession() as session:
             url = f"https://graph.facebook.com/v18.0/{phone_number}/messages"
-            print(url)
+           
             try:
                 async with session.post(url, data=body, headers=headers) as response:
                     html = await response.text()
                     if response.status == 200:
 
-                        print("Status:", response.status)
-                        print("Content-type:", response.headers["content-type"])
-
-                        
-                        print("Body:", html)
+                       
                         
                         return json.loads(html)
                     
@@ -580,16 +575,12 @@ async def send_media_mesage(message, phone_number):
         body = json.dumps(body)
         async with aiohttp.ClientSession() as session:
             url = f"https://graph.facebook.com/v18.0/{settings.PHONE_NUMBER}/messages"
-            print(url)
+            
             try:
                 async with session.post(url, data=body, headers=headers) as response:
                     html = await response.text()
                     if response.status == 200:
-                        print("Status:", response.status)
-                        print("Content-type:", response.headers["content-type"])
-
-                        
-                        print("Body:", html)
+                       
                         
                         return json.loads(html)
                     
@@ -730,7 +721,7 @@ async def send_interactive_template(number, template_name, data):
         
        
         body = json.dumps(body)
-        print(body)
+        
         async with aiohttp.ClientSession() as session:
             url = f"https://graph.facebook.com/v18.0/{settings.PHONE_NUMBER}/messages"
             print(url)
@@ -766,7 +757,7 @@ async def get_upload_permission(file_data):
             try:
                 async with session.post(url_upload) as response:
                     html = await response.text()
-                    print(html)
+                    
                     if response.status == 200:
 
                         body = json.loads(html)
@@ -797,7 +788,7 @@ async def upload_file_api(upload_id, file_data):
             try:
                 
                 url = f"https://graph.facebook.com/v18.0/{upload_id}"
-                print(url)
+               
                 headers = {
                     "file_offset": "application/json",
                     "Authorization": f"OAuth {settings.ACCESS_TOKEN}"
@@ -805,10 +796,10 @@ async def upload_file_api(upload_id, file_data):
                 
                 async with session.post(url, headers=headers, data=file_data['data']) as response:
                     html = await response.text()
-                    print('\n\n--Respuesta file api', html)
+                    
                     if response.status == 200:
                         r_data = json.loads(html)
-                        print(repr_dic(r_data))
+                        
                         return r_data['h']
                         
                 
@@ -839,7 +830,7 @@ async def upload_file_api_2(file_data, from_number):
                     phone_number = settings.CORREO_MAESTRO_PHONE_NUMBER_ID
 
                 url = f"https://graph.facebook.com/v18.0/{phone_number}/media"
-                print(url)
+                
 
                 data = {
                     'file':str(file_data['data']),
@@ -859,7 +850,7 @@ async def upload_file_api_2(file_data, from_number):
                 }
                 
                 response = requests.post(url, headers=headers, files=files, data=data)
-                print('\n\n\n--',response.text)
+                
                 
                 return response.text
                 
@@ -886,7 +877,7 @@ def get_user_projects(user):
                 """
    
     data = dm.execute_indexed_query(query)
-    print(data['PROYECTOS'])
+    
     return data['PROYECTOS']
 
 
@@ -906,7 +897,7 @@ def format_project_names(projects:list):
             continue
         else:
             result.append(i)
-        print(result)
+        
 
     return result
 def get_phone_number(project):

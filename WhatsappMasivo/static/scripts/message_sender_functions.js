@@ -364,36 +364,37 @@ async function send_messages(){
                         timeout: 50000
                     }, 
                     ).then(async function (response){
-                    response = response['data'];
-                    
-                    status = response['status'];
-                    console.log(status);
-                    template_name = response['template_name'];
-                    display_id = response['display_ids'];
-                    if(response['type'] != 'text'){
-                        message_resource_id = response['resource_id']; 
-                        
-                    }
-                    if (status !== 200){
-                        
                         quitLoadingScreen(popup);
-                        if(status !== 400){
-                            popup = showLoadingScreenMessage('Fallo en el registro de mensajes<br>\n error: '+processText(response['error']));
+                        response = response['data'];
+                        
+                        status = response['status'];
+                        console.log(status);
+                        template_name = response['template_name'];
+                        display_id = response['display_ids'];
+                        if(response['type'] != 'text'){
+                            message_resource_id = response['resource_id']; 
+                            
                         }
-                        else{
-                            popup = showLoadingScreenMessage('Fallo en el registro de mensajes');
-                        }
-                        setTimeout(function(){
+                        if (status !== 200){
+                            
+                        
+                            if(status !== 400){
+                                popup = showLoadingScreenMessage('Fallo en el registro de mensajes<br>\n error: '+processText(response['error']));
+                            }
+                            else{
+                                popup = showLoadingScreenMessage('Fallo en el registro de mensajes');
+                            }
+                            
                             quitLoadingScreen(popup);
-                        }, 5000);
+                        
                     }
                     else{
-                        setTimeout(async () => {
-                            showMessageScreen('Plantilla Registrada');
-                        }, 1000);
-                        console.log('Enviando Mensajes')
-                        console.log('\nFrom number: ', column_select.value);
-                        message.innerHTML = '<div class="loading-message">Mensaje autorizado, enviando mensajes</div>';
+                       
+                        showMessageScreen('Plantilla Registrada',2000);
+                        
+                        popup = showLoadingScreen('Enviando Mensajes');
+                        console.log('\Enviando Mensajes from number: ', column_select.value);
+                        
                         await axios.post('/send_messages/', {
                             df: df,
                             template_name:template_name,
@@ -409,11 +410,11 @@ async function send_messages(){
                         .then(function (response){
                             response = response['data'];
                             console.log(response);
-                            popup.removeChild(message);
-                            setTimeout(() => {
-                                showMessageScreen('Mensajes enviados!<br>Total:'+response.message_count);
+                            quitLoadingScreen(popup);
+                            
+                            showMessageScreen('Mensajes enviados!<br>Total:'+response.message_count, 4000);
             
-                            }, 5000);                
+                                         
                             if(response.status !== 200){
                                 quitLoadingScreen(popup);
                                 popup = showLoadingScreenMessage('loading-message">Fallo enviando los mensajes'+response.error)
@@ -425,19 +426,20 @@ async function send_messages(){
                            
                         })
                         .catch(function (error){
+                            console.log(error);
                             quitLoadingScreen(popup);
                                 popup = showLoadingScreenMessage('loading-message">Fallo enviando los mensajes'+error);
                                 quitLoadingScreen(popup);
                         }); 
                     }
-                    
+                    console.log('En teoria ya se enviaron');
+                    quitLoadingScreen(popup);
                 
                 })
                 .catch(function (error){
-                setTimeout(function(){
-                        quitLoadingScreen(popup);
-                        }, 5000)
                 });
+                quitLoadingScreen(popup);
+                        
             }
         }).catch((error)=>{
             console.log(error);
@@ -445,7 +447,7 @@ async function send_messages(){
         })
     }
     else{
-        console.log('Registrando el template');
+        
         await axios.post('/register_template/', 
             { 
                 message:{'components': components,
@@ -457,6 +459,7 @@ async function send_messages(){
                 from_number: column_select.value
             }
             ).then(async function (response){
+                quitLoadingScreen(popup);
             response = response['data'];
             
             status = response['status'];
@@ -476,13 +479,12 @@ async function send_messages(){
                 else{
                     popup = showLoadingScreenMessage('Fallo en el registro de mensajes');
                 }
-                setTimeout(function(){
-                    quitLoadingScreen(popup);
-                }, 5000);
+                
+                quitLoadingScreen(popup);
+                showMessageScreen('Plantilla Registrada',1500);
             }
             else{
-                console.log('Enviando Mensajes')
-                console.log('\nFrom number: ', column_select.value);
+                popup = showLoadingScreenMessage('Enviando Mensajes');
                 message.innerHTML = '<div class="loading-message">Mensaje autorizado, enviando mensajes</div>';
                 await axios.post('/send_messages/', {
                     df: df,
@@ -497,22 +499,23 @@ async function send_messages(){
                     file_data: file_data
                 })
                 .then(function (response){
+                    quitLoadingScreen(popup);
                     response = response['data'];
-                    console.log(response);
-                    popup.removeChild(message);
-                    setTimeout(() => {
-                        showMessageScreen('Mensajes enviados!<br>Total:'+response.message_count);
+                   
+                   
+                    
+                    showMessageScreen('Mensajes enviados!<br>Total:'+response.message_count, 5000);
     
-                    }, 3000);                
+                               
                     if(response.status !== 200){
                         quitLoadingScreen(popup);
                         popup = showLoadingScreenMessage('loading-message">Fallo enviando los mensajes'+response.error)
                         message.innerHTML = '<div class="loading-message">Fallo enviando los mensajes'+response.error+'</div>';
                     }
                     popup.appendChild(message)
-                    setTimeout(function(){
-                        quitLoadingScreen(popup);
-                    }, 3000);
+                    
+                    quitLoadingScreen(popup);
+                    
             
                 })
                 .catch(function (error){
@@ -525,11 +528,9 @@ async function send_messages(){
         
         })
         .catch(function (error){
-        setTimeout(function(){
-                quitLoadingScreen(popup);
-                }, 5000)
+            console.log(error);
         });
-       
+        quitLoadingScreen(popup);
     }
     
 

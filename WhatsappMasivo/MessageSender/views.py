@@ -383,7 +383,7 @@ def get_file_authorization(request):
 def send_messages(request):
     try:
             
-        if request.method == "POST":
+         if request.method == "POST":
         
             body = json.loads(request.body.decode('utf-8'))
             repr_dic(body)
@@ -440,12 +440,10 @@ def send_messages(request):
             
             counter = 0
             print('\n\n\n\nEnviando mensajes...')
-            print(f'\n\n\n\n\nnum val: {len(numeros_validos)}',numeros_validos)
+          
             for index, row in df.iterrows():
                 print('\n\n\n-----------',index)
-                if True:
-                    print('\n\n\n--------- ', row)
-                    
+                if True:  
                     if header_type == 'text':
                         header_parameters = []
                         pcc_d =pre_component_dic.copy()
@@ -484,7 +482,7 @@ def send_messages(request):
                                                         template_name=template_name, 
                                                         components=components,
                                                         from_number=from_number))
-                    print('\n\nresponse: \n',repr_dic(response))
+                    
                     
                     m_status = 'error'
                     wamid = ''
@@ -497,7 +495,6 @@ def send_messages(request):
                             counter += 1
                         wamid = messages['id']
                         
-                    print(f'Tratando de formatear el mensaje')
                   
                     n_dic = message.copy()
                     
@@ -506,9 +503,9 @@ def send_messages(request):
                     for ixx, i in enumerate(pre_components):
                         if i is not None:
                             aux = i.copy()
-                            print(i)
+                            
                             if 'text' in i.keys():
-                                print(df.iloc[[index]])
+                                
                                 formatiado = format_string(aux['text'], data=df.iloc[[index]])
                                 print(formatiado)
                                 aux['text'] = formatiado
@@ -525,7 +522,7 @@ def send_messages(request):
                     
                     r_body = json.dumps(n_dic)
                     print('insertando en la base de datos...')
-                    if from_number == 'Edilar':
+                    if 'RFC' in df.columns.values:
                         db.insert_message_registry(message_data={
                             'date':datetime.now(pytz.timezone("Mexico/General")).strftime("%Y-%m-%d %H:%M:%S"),
                             'user':body['user'],
@@ -571,6 +568,8 @@ def send_messages(request):
         print(repr(e))
         return HttpResponse(json.dumps({'status':400,
                         'error':repr(e)}))
+    
+
     
 
 @csrf_exempt

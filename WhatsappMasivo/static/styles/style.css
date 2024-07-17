@@ -585,10 +585,6 @@ textarea::placeholder{
     top: 0;
     left: 0;
     
-    align-content: center;
-    align-items: center;
-    justify-content: center;
-    text-align: left;
     opacity: 0;
     z-index: -1;
 }
@@ -615,21 +611,17 @@ textarea::placeholder{
     height: 100%;
     transition: all 2s ease-in-out;
     background: rgba(80,80,80,0.9);
-    align-items: center;
-    justify-content: center;
-    text-align: center;
+   
    
 }
 .message-popup .loading-message{
     position: absolute;
     top: 40%;
     margin-left: 0 auto;
-    align-items: center;
+    
     font-weight: 400;
     
-    align-items: center;
-    justify-content: center;
-    text-align: center;
+    left: 40%;
    
 }
 .open-popup .loading-message{
@@ -638,7 +630,7 @@ textarea::placeholder{
     margin-left: 0 auto;
     align-items: center;
     font-weight: 400;
-    
+    left: 40%;
     align-items: center;
     justify-content: center;
     text-align: center;
@@ -666,8 +658,8 @@ textarea::placeholder{
     border-top: 10px solid rgba(100,100,100,0.5); 
     border-radius: 60%;
     position: absolute;
-    align-self: center;
     left: 45%;
+    margin: 0 auto;
     top:25%;
     width: 100px;
     height: 100px;
