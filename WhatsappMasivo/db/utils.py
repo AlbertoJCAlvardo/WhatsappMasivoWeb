@@ -30,10 +30,12 @@ class DatabaseManager:
                 query = f"""
                             SELECT  FACILIDAD_COBRANZA_RFC
                             FROM CL.WHATSAPP_COMUNICATE
-                            WHERE DESTINO LIKE '%{message_data['origin']}%'
+                            WHERE DESTINO LIKE '%{message_data['origin'][3:]}%'
                          """
                 headers, data = self.execute_query(query)
-                rfc = f"'{data[0][0]}'"
+                if len(data) > 0:
+                    if len(data[0]>0):
+                        rfc = f"'{data[0][0]}'"
                 
             query = f"""
                     INSERT INTO 
