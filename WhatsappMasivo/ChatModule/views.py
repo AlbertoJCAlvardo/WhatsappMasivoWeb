@@ -116,7 +116,7 @@ def whatsapp_webhook(request):
 
 
                             if len(dta) > 0:
-                                if len(data[0])>0:
+                                if len(dta[0])>0:
                                     user = dta[0][0]
                             
                             result = dm.insert_message_response(message_data={

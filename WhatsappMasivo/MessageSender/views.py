@@ -387,6 +387,7 @@ def send_messages(request):
          if request.method == "POST":
         
             body = json.loads(request.body.decode('utf-8'))
+            
             repr_dic(body)
             message = body['message']
 
