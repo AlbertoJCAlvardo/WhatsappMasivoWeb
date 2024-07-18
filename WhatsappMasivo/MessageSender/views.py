@@ -19,6 +19,7 @@ from time import sleep, time
 from datetime import datetime
 import pytz
 from datetime import timedelta
+import copy
 # Create your views here.
 
 @csrf_exempt
@@ -807,6 +808,8 @@ def format_history(request):
             content = df.iloc[:, :].values.tolist()
             
             print(len(list(df.iloc[:,[0]].values)))
+
+
            
             
             response = {
@@ -883,3 +886,69 @@ def file_test(request):
 
     return HttpResponse(render_to_string('file_test.html', context=context))
 
+@csrf_exempt
+def fix_cobranza(request):
+    if request.method == 'POST' and request.FILES['file'] is not None:
+        print('request')
+        try:
+            file_data = request.FILES['file']
+            extension = str(file_data).split('.')[1]
+            footer = ""
+            df = None
+
+            if extension == 'xlsx':
+                df = pd.read_excel(file_data)
+            if extension == 'csv':
+                df = pd.read_csv(file_data)
+            pre_component_dic ={"HEADER": 
+                                {"type": "HEADER", 
+                                "format": "TEXT",
+                                "text": "\u00a1Felicidades {NOMBRE}!",
+                                "content": "\u00a1Felicidades {{1}}!"}, 
+                            "BODY":
+                                {"type": "BODY", 
+                                "text": " Elegiste formar parte del programa \u201cApoyo econ\u00f3mico adicional para fortalecer el desempe\u00f1o acad\u00e9mico y profesional de las figuras educativas del CONAFE\u201d.  \nAl elegir formar parte de este programa, CONAFE te entrega un apoyo econ\u00f3mico de $ 4,450.00 una vez que hayas completado el 50%, por $ 4,450.00, en \n*{OPCION_PAGO}* pagos de *$ {CUOTA}* , como previamente lo seleccionaste cuando realizaste tu registro.\n\n*Enviamos a tu correo {EMAIL} el contrato y el formato de pago*\n\n\u00a1Empieza hoy mismo!\nSi completas tu pago ahora mismo, ser\u00e1s de los primeros\nen recibir tu laptop. \n\nEs indispensable que al realizar tus pagos ingreses tu referencia personal \n*{REFERENCIA_PAGO}*.  Esto permite al sistema identificarlos de manera autom\u00e1tica."},
+                            "FOOTER": {"type": "FOOTER", "text": "Gracias por tu atenci\u00f3n"}}
+            pcc_di = copy.deepcopy(pre_component_dic)
+            j = 1
+            for  index, row in df.iterrows():
+                print('\n\n\n-----------',index,row)
+                
+                header_parameters = []
+                pcc_d = copy.deepcopy(pcc_di)
+                header_message = pcc_d['HEADER']['text']
+               
+                
+                
+                h_formatiado = format_string(pcc_d['HEADER']['text'][:], data=df.iloc[[index]])            
+                b_formatiado = format_string(pcc_d['BODY']['text'][:], data=df.iloc[[index]])   
+                pcc_d['HEADER']['text'] = h_formatiado
+                pcc_d['BODY']['text'] = b_formatiado
+                r_d = {'components':[]}
+                for x in pcc_d.keys():
+                    
+                    r_d['components'].append(pcc_d[x])
+
+                print('\n\n',j,h_formatiado)
+            
+                dm = DatabaseManager('sistemas')
+
+
+                dm.update_message(message_data={
+                    'message': json.dumps(r_d),
+                    'phone':str(row['NUMERO_TELEFONO'])
+                    
+                })
+                
+                j += 1
+                    
+                    
+                  
+                
+            return HttpResponse(json.dumps({'status','ok'}),status=200)
+
+        except Exception as e:
+            
+            print(repr(e))
+            return HttpResponse(json.dumps({'status','error'}),status=500)
+    return  HttpResponse(json.dumps({'status':'error'}),status=500)

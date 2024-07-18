@@ -82,9 +82,30 @@ class DatabaseManager:
             return result
 
         except Exception as e:
-            connection.close()
+            
             raise(e)
+    def update_message(self, message_data):
+        try:
+            database = create_engine(self.DATABASE_URL)
+            connection = database.connect(database.url)
 
+            if connection.closed:
+                connection.connect()
+            query = f"""UPDATE CL.WHATSAPP_COMUNICATE
+                            SET MENSAJE = '{message_data['message']}'
+                            
+                            WHERE DESTINO = '52' || '{message_data['phone']}'
+                            AND NOMBRE_MENSAJE = 'edilar_240717_142500'
+            
+                        """
+            connection.execute(query)
+            connection.close()
+            
+            
+
+        except Exception as e:
+            
+            raise(e)
     def update_message_status(self, message_data):
         database = create_engine(self.DATABASE_URL)
         connection = database.connect(database.url)

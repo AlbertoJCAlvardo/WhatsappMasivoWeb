@@ -107,7 +107,8 @@ def whatsapp_webhook(request):
                                         ORDER BY V.FECHA DESC
 
                                     """
-                            
+                            if datetime.now().hour > 11 and datetime.now().hour < 13:
+                                print(query)
                             headers, dta = dm.execute_query(query=query)
                             
                             user = None
@@ -115,7 +116,8 @@ def whatsapp_webhook(request):
 
 
                             if len(dta) > 0:
-                                user = dta[0][0]
+                                if len(data[0])>0:
+                                    user = dta[0][0]
                             
                             result = dm.insert_message_response(message_data={
                                     'date': datetimes,

@@ -1,11 +1,12 @@
 import pandas as pd 
 
-def format_string(text:str,data:pd.DataFrame):
+def format_string(txt:str,data:pd.DataFrame):
 
     words, tokens = [],[]
     formatted = ""
+    text = txt[:]
     lst = text.split("{")
-    print(f'formateando: {text} con info: {data}')
+   
     for i in lst:
         
         if "}" in i:
