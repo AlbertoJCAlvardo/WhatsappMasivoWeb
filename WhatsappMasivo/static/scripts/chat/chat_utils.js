@@ -66,7 +66,7 @@ function start(){
 
 
 function ciclo(){
-    setInterval(check, 1200);
+    setInterval(check, 30000);
 }
 
 
