@@ -87,7 +87,8 @@ def get_user_name(u:str):
     
 
 def get_components(data:pd.DataFrame)-> list:
-    return list(data.iloc[0].apply(str).values)
+    print(data)
+    return list(data.iloc[0].values.astype(str))
 
 def validate_login(user, password):
     try:

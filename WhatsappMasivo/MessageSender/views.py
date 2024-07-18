@@ -91,7 +91,7 @@ def format_table(request):
                 df = pd.read_excel(file_data)
             if extension == 'csv':
                 df = pd.read_csv(file_data)
-
+            df = df.rename(columns=lambda x: x.strip())
             content = df.iloc[:, :].values.tolist()
 
             if len(list(df.iloc[:, [0]].values)) > 10:
@@ -265,14 +265,14 @@ def template_registry(request):
             message = body['message']
             df = body['df']
             from_number = body['from_number']
-            print(type(df),df)
+          
             auxdic = json.loads(df)
             if message is not None and  df is not None and from_number is not None:
                 print(type(auxdic),auxdic)
-                repr_dic(auxdic)
+                
                 print('auxiliardic sesupone ya impreso')
                 df = pd.read_json(df)
-
+                print(df)
                 pre_component_dic = {}
                 pre_components = message['components']
                 header_type = message['type']
@@ -300,7 +300,7 @@ def template_registry(request):
                     
                     header_text= pre_component_dic['HEADER']['text']
                     formatted_header, tokens_header = set_wa_format(message=header_text, data=df.iloc[0])
-                    
+                    print(tokens_header)
                     pre_component_dic['HEADER']['text'] = formatted_header
                     if len(list(tokens_header.keys())) > 0:
                         pre_component_dic['HEADER']['example'] = {
@@ -309,24 +309,27 @@ def template_registry(request):
                 
                 body_message = pre_component_dic['BODY']['text']
                 formatted_body, tokens_body = set_wa_format(message=body_message, data=df.iloc[0])
-
+                print(tokens_body)
                 print('fbody: ',formatted_body)
                 pre_component_dic['BODY']['text'] = formatted_body
 
+                print('Obteniendo Componentes')
+                
+                
                 if len(list(tokens_body.keys())) > 0:
                     pre_component_dic['BODY']['example'] = {
-                                        'body_text': [get_components(df[list(tokens_body.keys())])]
+                                        'body_text': [list(get_components(df[list(tokens_body.keys())]))]
                                     }
-                
+                print('Componentes obtenidos')
 
                 components = []
                 for i in pre_component_dic.keys():
-                    print(i)
+                    print(pre_component_dic[i])
                     components.append(pre_component_dic[i])
                 print(f'Intentando registrar {components}')
                 template_name, response =  asyncio.run(register_template(components, from_number=from_number))
                 
-                print(template_name)
+                print(response)
                 if 'error' not in response.keys():
                     status = response['status']
                     print(response)
