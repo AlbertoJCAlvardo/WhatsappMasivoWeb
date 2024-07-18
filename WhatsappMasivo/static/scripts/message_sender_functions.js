@@ -485,7 +485,7 @@ async function send_messages(){
             }
             else{
                 popup = showLoadingScreenMessage('Enviando Mensajes');
-                message.innerHTML = '<div class="loading-message">Mensaje autorizado, enviando mensajes</div>';
+               
                 await axios.post('/send_messages/', {
                     df: df,
                     template_name:template_name,

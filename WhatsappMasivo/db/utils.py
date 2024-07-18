@@ -34,7 +34,7 @@ class DatabaseManager:
                          """
                 headers, data = self.execute_query(query)
                 if len(data) > 0:
-                    if len(data[0]>0):
+                    if len(data[0]) >0:
                         rfc = f"'{data[0][0]}'"
                 
             query = f"""

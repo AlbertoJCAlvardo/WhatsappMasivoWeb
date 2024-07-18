@@ -325,15 +325,16 @@ def template_registry(request):
                     components.append(pre_component_dic[i])
                 print(f'Intentando registrar {components}')
                 template_name, response =  asyncio.run(register_template(components, from_number=from_number))
-                i
+                
                 print(template_name)
                 if 'error' not in response.keys():
                     status = response['status']
-                
+                    print(response)
                     for _ in range(50):
                         sleep(2)
                         print('Esperando...')
                         if status != 'PENDING':
+                            print(status, 'Deteniendo')
                             break
                         
                         status = asyncio.run(check_template_status(response['id']))
@@ -387,7 +388,7 @@ def send_messages(request):
          if request.method == "POST":
         
             body = json.loads(request.body.decode('utf-8'))
-            print('\n\n\n', body)
+            print('\n\n\nsend_messages:', body)
             repr_dic(body)
             message = body['message']
 
@@ -524,7 +525,9 @@ def send_messages(request):
                     
                     r_body = json.dumps(n_dic)
                     print('insertando en la base de datos...')
-                    if 'RFC' in df.columns.values:
+                    print(list(df.columns.values))
+                    if 'RFC' in list(df.columns.values):
+                        print(f'Lol, si trae el rfc {row["RFC"]}')
                         db.insert_message_registry(message_data={
                             'date':datetime.now(pytz.timezone("Mexico/General")).strftime("%Y-%m-%d %H:%M:%S"),
                             'user':body['user'],
