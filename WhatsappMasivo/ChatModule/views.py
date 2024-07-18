@@ -150,7 +150,7 @@ def whatsapp_webhook(request):
                                 error_title = error['title']
                                 error_message = error['message']
                                 details = error['error_data']['details']
-                                error_info = f"Titulo: {error_title}\nMensaje: {error_message}\n\nDetalles: {details}"
+                                error_info = f"Titulo: {error_title}\nMensaje De Error: {error_message}\n\nDetalles: {details}"
                                 print(error_info)
                                 dm.update_message_error(message_data = {
                                     'wamid': wamid,

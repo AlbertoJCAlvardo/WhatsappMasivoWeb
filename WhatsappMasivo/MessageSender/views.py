@@ -856,7 +856,8 @@ def get_message_base(request,  template_name):
                             CASE
                                 WHEN   STATUS_ENVIO <> 'ok' THEN 'ERROR_DE_DATOS_EN_BASE'
                                 WHEN  STATUS_MENSAJE = 'failed' THEN 'FALLO_DE_META'
-                            END RAZON_FALLA
+                            END RAZON_FALLA,
+                            FALLO_META
                             FROM CL.WHATSAPP_COMUNICATE V
                             WHERE (STATUS_MENSAJE = 'failed' OR STATUS_ENVIO <> 'ok') AND V.NOMBRE_MENSAJE = '{message_name}'
                             
