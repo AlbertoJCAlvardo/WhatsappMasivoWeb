@@ -102,7 +102,7 @@ def whatsapp_webhook(request):
                             query = f"""
                                         SELECT USUARIO, FECHA
                                         FROM CL.WHATSAPP_COMUNICATE V
-                                        WHERE DESTINO LIKE '%52' || {from_id[3:]}%'
+                                        WHERE DESTINO LIKE '%52' || '{from_id[3:]}%'
                                         AND ORIGEN LIKE '%{destiny}%'
                                         ORDER BY V.FECHA DESC
 
