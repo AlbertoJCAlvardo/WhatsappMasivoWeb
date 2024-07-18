@@ -524,6 +524,10 @@ def send_messages(request):
                     print('message: ', n_dic)
                     
                     r_body = json.dumps(n_dic)
+                    s_body = {}
+                    for ss in li:
+                        if ss:
+                            s_body[ss['type']] = ss
                     print('insertando en la base de datos...')
                     print(list(df.columns.values))
                     if 'RFC' in list(df.columns.values):
@@ -538,7 +542,7 @@ def send_messages(request):
                             'message_name':template_name,
                             'origin': get_phone_number(from_number),
                             'wamid':wamid,
-                            'content': json.dumps(pre_component_dic),
+                            'content': json.dumps(s_body),
                             'tipo': header_type,
                             'rfc': row['RFC']
                         })

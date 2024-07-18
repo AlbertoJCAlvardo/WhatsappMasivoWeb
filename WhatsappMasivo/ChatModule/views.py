@@ -190,10 +190,11 @@ def chat_list(request):
         headers, data = dm1.execute_query(ph_query)
        
         profile_name = 'PROFILE_NAME'
+        print(get_user_projects(user))
         if 'EDILAR' in get_user_projects(user):
             profile_name = 'FACILIDAD_COBRANZA_RFC'
 
-        
+        print(profile_name)
         try:
             dm = DatabaseManager('sistemas')
 
@@ -212,7 +213,7 @@ def chat_list(request):
                             ELSE  V.ORIGEN
                         END TEL_USUARIO,
 
-                        FECHA, TIEMPO, USUARIO, UNREAD_MESSAGES, STATUS_CONVERSACION, FACILIDAD_COBRANZA_RFC AS PROFILE_NAME, CONTENIDO,   TIPO, FLOW, START_DATE, START_TIME
+                        FECHA, TIEMPO, USUARIO, UNREAD_MESSAGES, STATUS_CONVERSACION, {profile_name} AS PROFILE_NAME, CONTENIDO,   TIPO, FLOW, START_DATE, START_TIME
                     FROM (SELECT
                                         '52' || SUBSTR(V.ORIGEN,4,13) ORIGEN,
                                         V.DESTINO,
@@ -230,7 +231,7 @@ def chat_list(request):
 
                                         CONTENIDO,
                                         TIPO, 'RECIBIDO' FLOW,
-                                        FACILIDAD_COBRANZA_RFC
+                                        V.FACILIDAD_COBRANZA_RFC
 
                                 FROM CL.WHATSAPP_MASIVO_RESPUESTA V
 
@@ -256,7 +257,7 @@ def chat_list(request):
                                         END PROFILE_NAME,
                                         CONTENIDO,
                                         TIPO, 'ENVIADO' FLOW,
-                                        FACILIDAD_COBRANZA_RFC
+                                        B.FACILIDAD_COBRANZA_RFC
 
                                 FROM CL.WHATSAPP_COMUNICATE B
                                 WHERE STATUS_MENSAJE != 'failed') V
@@ -291,7 +292,7 @@ def chat_list(request):
                                 
 
                                             """
-            
+            print(query)
             headers, conversations = dm.execute_query(query)
            
             

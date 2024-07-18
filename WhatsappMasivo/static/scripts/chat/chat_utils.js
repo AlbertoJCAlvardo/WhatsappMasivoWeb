@@ -253,8 +253,8 @@ async function add_chats(page){
                 console.log(total_unread, contact['UNREAD_MESSAGES']);
                 total_unread = total_unread + parseInt(contact['UNREAD_MESSAGES']);
                 let label = "";
-                let nombre = "";
-                
+                let nombre = contact['PROFILE_NAME'];
+                console.log(contact['PROFILE_NAME']);
                 
                 if(contact['TIPO'] == 'text'){
                     label = contact['CONTENIDO']['body'];
