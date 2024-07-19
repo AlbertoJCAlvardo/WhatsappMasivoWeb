@@ -231,7 +231,9 @@ def chat_list(request):
 
                                         CONTENIDO,
                                         TIPO, 'RECIBIDO' FLOW,
-                                        V.FACILIDAD_COBRANZA_RFC
+                                        (SELECT DISTINCT FACILIDAD_COBRANZA_RFC
+                                          FROM CL.WHATSAPP_COMUNICATE WHERE ORIGEN LIKE '%'||SUBSTR(V.DESTINO,-10)||'%'
+                                            AND DESTINO LIKE '%'|| SUBSTR(V.ORIGEN,-10) || '%' AND FACILIDAD_COBRANZA_RFC IS NOT NULL) FACILIDAD_COBRANZA_RFC
 
                                 FROM CL.WHATSAPP_MASIVO_RESPUESTA V
 
@@ -268,6 +270,7 @@ def chat_list(request):
                                     FROM(
 
                                         SELECT DISTINCT('52' || SUBSTR(ORIGEN,4,13)) ORIGEN, MAX(FECHA) START_DATE, DESTINO
+                                        
                                         FROM CL.WHATSAPP_MASIVO_RESPUESTA
                                         WHERE USUARIO = '{user}'
                                          AND DESTINO = '{data[0][0]}'
@@ -276,9 +279,11 @@ def chat_list(request):
 
                                         UNION
                                         SELECT DISTINCT(DESTINO) ORIGEN, MAX(FECHA) START_DATE, ORIGEN DESTINO
+                                      
                                         FROM CL.WHATSAPP_COMUNICATE
                                         WHERE USUARIO = '{user}' AND STATUS_MENSAJE != 'failed'
                                          AND ORIGEN = '{data[0][0]}'
+                                         
                                         GROUP BY DESTINO, ORIGEN
                                         ORDER BY START_DATE DESC
                                     ) A
