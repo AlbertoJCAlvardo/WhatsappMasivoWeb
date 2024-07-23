@@ -1,5 +1,6 @@
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine,insert, update
 from sqlalchemy.orm import  Session
+
 from datetime import datetime
 from core.format import set_format,set_upper_format
 from core.config import settings
@@ -14,6 +15,28 @@ class DatabaseManager:
           self.DATABASE_URL = settings.DATABASE_URL_S
         else:
             self.DATABASE_URL = settings.DATABASE_URL
+    
+    def update_rfc(self,rfc,phone_number):
+        try:
+            database = create_engine(self.DATABASE_URL)
+            connection = database.connect(database.url)
+
+            if connection.closed:
+                connection.connect()
+            
+            query = f"""
+                        UPDATE
+                        CL.WHATSAPP_COMUNICATE
+                        SET FACILIDAD_COBRANZA_RFC = '{rfc}'
+                        WHERE DESTINO = '{phone_number}'
+                    """ 
+            
+            with Session(database) as session:
+                session.commit()
+            connection.close()
+        except Exception as e:
+            connection.close()
+            print(repr(e))
 
     def insert_message_response(self, message_data):
         try:
@@ -71,12 +94,12 @@ class DatabaseManager:
             query = f"""
                         INSERT INTO 
                         CL.WHATSAPP_COMUNICATE
-                        (FECHA, USUARIO, DESTINO, MENSAJE, STATUS_ENVIO, TIPO_MENSAJE, NOMBRE_MENSAJE, ORIGEN, WAMID, CONTENIDO, TIPO, FACILIDAD_COBRANZA_RFC)
+                        (FECHA, USUARIO, DESTINO, MENSAJE, STATUS_ENVIO, TIPO_MENSAJE, NOMBRE_MENSAJE, ORIGEN, WAMID, CONTENIDO, TIPO, FACILIDAD_COBRANZA_RFC,RESPUESTA_AUTOMATICA)
                         
                         VALUES (TO_DATE('{message_data['date']}', 'RRRR-MM-DD hh24:mi:ss'), '{message_data["user"]}',
                           '{message_data['destiny']}', '{message_data['message']}', '{message_data['status_envio']}', 
                           '{message_data['type']}', '{message_data['message_name']}', '{message_data['origin']}', '{message_data['wamid']}',
-                          '{message_data['content']}', '{message_data['tipo']}',  {rfc})
+                          '{message_data['content']}', '{message_data['tipo']}',  {rfc}, {message_data['automatic_response']})
                     """
             
             result = database.execute(query)

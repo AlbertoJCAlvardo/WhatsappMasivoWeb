@@ -403,6 +403,12 @@ def send_messages(request):
             from_number = body['from_number']
             pre_components = message['components'].copy()
             header_type = message['type']
+            aures = body['automatic_response']
+            automatic_response = 'NULL'
+            if aures != '':
+                automatic_response = f"'{aures}'"
+
+
             file_data = body['file_data']
             for i in pre_components:
                 if i:
@@ -488,7 +494,7 @@ def send_messages(request):
                                                         template_name=template_name, 
                                                         components=components,
                                                         from_number=from_number))
-                    
+                    print(response)
                     
                     m_status = 'error'
                     wamid = ''
@@ -499,10 +505,12 @@ def send_messages(request):
                         if messages['message_status'] == 'accepted':
                             m_status = 'ok'
                             counter += 1
+                        else:
+                            print('error',components)
                         wamid = messages['id']
                         
                   
-                    n_dic = message.copy()
+                    n_dic = copy.deepcopy(message)
                     
                     li = n_dic['components']
                     
@@ -547,9 +555,10 @@ def send_messages(request):
                             'wamid':wamid,
                             'content': json.dumps(s_body),
                             'tipo': header_type,
-                            'rfc': row['RFC']
+                            'rfc': row['RFC'],
+                            'automatic_response':automatic_response
                         })
-                        
+                        db.update_rfc(row['RFC'], numeros[row['NUMERO_TELEFONO']].replace('+', ''))
                     else:
                        
                         if from_number != 'Edilar':
@@ -565,7 +574,8 @@ def send_messages(request):
                                 'wamid':wamid,
                                 'content': json.dumps(pre_component_dic),
                                 'tipo': header_type,
-                                'rfc': None
+                                'rfc': None,
+                                'automatic_response':automatic_response
                             })
                     
                     

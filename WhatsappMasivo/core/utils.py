@@ -450,6 +450,7 @@ async def get_image_from_url(url):
 
 async def send_text_mesage_api(body, phone_number, destiny):
     try:
+
         phone_number_id = ""
         print(phone_number)
         if phone_number ==settings.PHONE_NUMBER:
@@ -460,6 +461,7 @@ async def send_text_mesage_api(body, phone_number, destiny):
             
         if  phone_number ==  settings.CORREO_MAESTRO_PHONE_NUMBER:
             phone_number_id  = settings.CORREO_MAESTRO_PHONE_NUMBER_ID
+        
         
       
         headers = {
@@ -480,6 +482,7 @@ async def send_text_mesage_api(body, phone_number, destiny):
         }
 
         body = json.dumps(body)
+        print(body)
         async with aiohttp.ClientSession() as session:
             url = f'https://graph.facebook.com/v19.0/{phone_number_id}/messages'
             print(url)
@@ -488,9 +491,7 @@ async def send_text_mesage_api(body, phone_number, destiny):
                     html = await response.text()
                     if response.status == 200:
                         print("Status:", response.status)
-                        print("Content-type:", response.headers["content-type"])
 
-                        
                         print("Body:", json.loads(html))
                         
                         return json.loads(html)

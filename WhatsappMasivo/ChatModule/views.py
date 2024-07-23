@@ -8,7 +8,7 @@ from core.formatter import format_string, format_phone_numbers, set_wa_format
 from django.views.decorators.csrf import csrf_exempt
 from core.utils import (send_message, register_template, get_components, 
                         check_template_status, remove_rejected_template, get_image_url, get_image_from_url, get_user_projects, format_project_names,
-                        deformat_project_name)
+                        deformat_project_name, send_text_mesage_api)
 from django.views.decorators.csrf import csrf_exempt
 from db.utils import DatabaseManager
 from core.config import settings
@@ -118,7 +118,21 @@ def whatsapp_webhook(request):
                             if len(dta) > 0:
                                 if len(dta[0])>0:
                                     user = dta[0][0]
-                            
+                            query = f"""
+                                        SELECT DESTINO
+                                        FROM CL.WHATSAPP_MASIVO_RESPUESTA
+                                        WHERE ORIGEN = '{from_id}' AND DESTINO = '{destiny}'
+                                        AND TO_CHAR(FECHA,'RRRR-MM-DD') =  '{td.strftime('%Y-%m-%d')}'
+                                    """
+                            print(td.strftime('%Y-%m-%d'))
+
+                            data, dates = dm.execute_query(query)
+                            print(dates)
+                            message_switch = 0
+                            if not dates:
+                                
+                                message_switch = 1
+
                             result = dm.insert_message_response(message_data={
                                     'date': datetimes,
                                     'origin': from_id,
@@ -130,8 +144,61 @@ def whatsapp_webhook(request):
                                     'name':profile_name,
                                     'user': user
                                 })
+                            print('insertando mensaje...')
+                            if message_switch:
+                                query = f"""
+                                        SELECT RESPUESTA_AUTOMATICA
+                                        FROM CL.WHATSAPP_COMUNICATE
+                                        WHERE ORIGEN LIKE '%' || SUBSTR('{destiny}',-3) || '%'
+                                            AND DESTINO LIKE '%' || SUBSTR('{from_id}',-3) || '%'
+                                            AND TIPO_MENSAJE = 'template'
+                                        ORDER BY FECHA DESC
+                                        
+                                    """
+                                print('existe respuesta automatica')
+
+                                data, respuesta = dm.execute_query(query)
+                              
+                                if respuesta:
+                                    if respuesta[0] :
+                                        if respuesta[0][0] != '':
+                                            print(respuesta[0])
+                                            response = asyncio.run(send_text_mesage_api(respuesta[0][0],destiny, from_id))
+                                            print(response)
+                                            m_body = {"components": 
+                                                    [{"type": "HEADER", "format": "TEXT", "text": "", 
+                                                        "content": ""}, 
+                                                        {"type": "BODY", "text": f"{respuesta[0][0]}"},
+                                                        {"type": "FOOTER", "text": ""}, 
+                                                        'null'
+                                                    ],
+                                                        "type": "text", "buttons": 0}
+                                            m_b =  { 
+                                                    "BODY": {"type": "BODY", "text": f"{respuesta[0][0]}"},
+                                                    
+                                                        "type": "text"}
+                                            
+                                            m_m = json.dumps(m_body)
+                                            if 'messaging_product' in response.keys():
+                                                db = DatabaseManager('sistemas')
+                                                db.insert_message_registry(message_data={
+                                                            'date':datetime.now(pytz.timezone("Mexico/General")).strftime("%Y-%m-%d %H:%M:%S") ,
+                                                            'user':user,
+                                                            'destiny': from_id,
+                                                            'message': m_m,
+                                                            'status_envio':'ok',
+                                                            'type':'text',
+                                                            'message_name':None,
+                                                            'origin': destiny,
+                                                            'wamid':response['messages'][0]['id'],
+                                                            'content': json.dumps(m_b),
+                                                            'tipo': 'text',
+                                                            'automatic_response':'NULL'
+                                                        })
+                                            print('En teoria se mando el mensaje automatico')
 
                             print(result)
+                            
 
                         if 'statuses' in changes['value'].keys():
                             wamid = changes['value']['statuses'][0]['id']

@@ -48,7 +48,8 @@
                     <textarea placeholder="Pie de mensaje" id="message-footer" maxlength="25" 
                     onchange="enableSend()" oninput="enableSend()" ></textarea>
                    
-                    
+                    <textarea placeholder="Respuesta Automatica" id="automatic-response" maxlength="1024" 
+                   style="display:none;"></textarea>
                     
                 </div>
                 
@@ -81,6 +82,11 @@
                         <div class="bc">
                             <button class="cc-button" id="add-buttons"  onclick="add_button()">Añadir Botón</button>
                         </div>
+                        {% if 'Red Potencia' in empresas %}
+                        <div class="bc">
+                            <button class="cc-button" id="add-automatic"  onclick="add_automatic()">Respuesta Automatica</button>
+                        </div>
+                        {% endif %}
                         <div class="bc">
                             <button class="cc-button, send-button" id="send-btn" onclick="document.getElementById('btn-enviar').click()">Enviar</button>
                         </div>
@@ -100,6 +106,7 @@
                            "{% static 'vectors/chat.svg' %}"]
             let csv_img = "{% static 'images/csv_image.png' %}";
             let file_img = "{% static 'images/file_image.png' %}";
+            let audio = new Audio('{% static "alarm.mp3" %}');
         </script>
     </body> 
     

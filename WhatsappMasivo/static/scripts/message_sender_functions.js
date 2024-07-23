@@ -1,5 +1,38 @@
 var selected_item;
 let button_list = [];
+let automatic_response;
+let auto_res = 0 ;
+let aures_text;
+let a_r_button;
+
+
+async function add_automatic(){
+    
+    if(auto_res == 1){
+        a_r_button.classList.remove('automatic-pressed');
+        automatic_response.style.display = "none";
+        automatic_response.value = "";
+        aures_text = null;
+        auto_res = 0;
+    }
+    else{
+        const message = "Al añadir un mensaje de contestación automática, se enviará el texto seleccionado a todos"+
+                        " los usuarios de la campaña<br>inmediatamente despues de su primer mensaje de respuesta.<br>¿Desea Continuar?";
+        console.log('trynna confirm');
+        var confirm = {'val':true};
+        console.log(confirm);
+        
+        showDecitionScreen(message,confirm, ()=> {
+            a_r_button.classList.add('automatic-pressed');
+            automatic_response.style.display = "";
+            auto_res = 1;
+        });
+        console.log('aa');
+        console.log(confirm);
+        
+        console.log('epedo');
+    }
+}
 
 function add_column(){
     let text_area = selected_item;
@@ -405,7 +438,8 @@ async function send_messages(){
                                 },
                             user: document.getElementById('user').value,
                             from_number:column_select.value,
-                            file_data: file_data
+                            file_data: file_data,
+                            automatic_response:automatic_response.value
                         })
                         .then(function (response){
                             response = response['data'];
@@ -496,7 +530,8 @@ async function send_messages(){
                         },
                     user: document.getElementById('user').value,
                     from_number:column_select.value,
-                    file_data: file_data
+                    file_data: file_data,
+                    automatic_response: automatic_response.value
                 })
                 .then(function (response){
                     quitLoadingScreen(popup);
@@ -579,10 +614,16 @@ function getFileNameWithExt(event) {
 window.onload = function(){
     up_file = null;
     up_img = null;
+    a_r_button = document.getElementById('add-automatic');
+
+    
+    automatic_response = document.getElementById('automatic-response');
+    
     message_header_cont = document.getElementById('message-header-cont');
     df = document.getElementById('df').value;
     img_button = document.getElementById('img-button');
-
+   
+    auto_res = 0 ;
     file_button = document.getElementById('file-button');
     switch_button = document.getElementById('header-switch');
     file_button.addEventListener("change", getFileNameWithExt(event));
@@ -596,6 +637,9 @@ window.onload = function(){
     switch_button.onclick = function(){
         switch_btn();
     };
+    a_r_button.onclick = ()=> {
+        add_automatic();
+    } ;
     switch_status = "text";
     img_pos = 0;
 }

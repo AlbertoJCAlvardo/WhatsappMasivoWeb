@@ -18,7 +18,7 @@ let user;
 let total_unread = 0;
 let options1 = {};
 let options2 = {};
-
+let automatic_response;
 function select_empresa(){
    
     empresa = number_select.value;
@@ -202,7 +202,8 @@ async function send_message(){
         'message':message,
         'from_number': actualcc.tel_empresa,
         'phone_number': actualcc.tel_usuario,
-        'user': user
+        'user': user,
+        
     })
     .then(async (response) => {
             console.log(response.data);
