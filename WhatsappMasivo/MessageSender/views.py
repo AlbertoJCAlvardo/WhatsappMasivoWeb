@@ -388,7 +388,7 @@ def get_file_authorization(request):
 def send_messages(request):
     try:
             
-         if request.method == "POST":
+        if request.method == "POST":
         
             body = json.loads(request.body.decode('utf-8'))
             print('\n\n\nsend_messages:', body)
@@ -405,6 +405,15 @@ def send_messages(request):
             header_type = message['type']
             aures = body['automatic_response']
             automatic_response = 'NULL'
+
+            if template_name is None:
+                
+                response = {'status':400,
+                            'error':'Falta el nombre de la plantilla',
+                            }
+
+                return HttpResponse(json.dumps(response), status=400)
+
             if aures != '':
                 automatic_response = f"'{aures}'"
 
@@ -455,128 +464,151 @@ def send_messages(request):
           
             for index, row in df.iterrows():
                 print('\n\n\n-----------',index)
-                if True:  
-                    if header_type == 'text':
-                        header_parameters = []
-                        pcc_d =pre_component_dic.copy()
-                        header_message = pcc_d['HEADER']['text']
-                        formatted_header, tokens_header = set_wa_format(message=header_message, data=df.iloc[[index], :])
+                try:
+                    if True:  
+                        if header_type == 'text':
+                            header_parameters = []
+                            pcc_d =pre_component_dic.copy()
+                            header_message = pcc_d['HEADER']['text']
+                            formatted_header, tokens_header = set_wa_format(message=header_message, data=df.iloc[[index], :])
+                            
+                            
+                            pcc_d['HEADER']['content'] = formatted_header
+                            for parameter in row.loc[tokens_header.keys()]:
+                                header_parameters.append({
+                                    'type': 'text',
+                                    'text': str(parameter)
+                                })
+                                print(header_parameters)
+                            component_dic['HEADER']['parameters'] = header_parameters
+
                         
-                        
-                        pcc_d['HEADER']['content'] = formatted_header
-                        for parameter in row.loc[tokens_header.keys()]:
-                            header_parameters.append({
+                        formatted_body, tokens_body = set_wa_format(message=body_message, data=df.iloc[[index],:])
+                        body_parameters = []
+
+                        for parameter in row.loc[tokens_body.keys()]:
+                            body_parameters.append({
                                 'type': 'text',
                                 'text': str(parameter)
                             })
-                            print(header_parameters)
-                        component_dic['HEADER']['parameters'] = header_parameters
-
-                      
-                    formatted_body, tokens_body = set_wa_format(message=body_message, data=df.iloc[[index],:])
-                    body_parameters = []
-
-                    for parameter in row.loc[tokens_body.keys()]:
-                        body_parameters.append({
-                            'type': 'text',
-                            'text': str(parameter)
-                        })
-                    
-                    component_dic['BODY']['parameters'] = body_parameters
-
-                    
-                    components  = [component_dic['HEADER'], component_dic['BODY']]
-                    
-                   
-                    
-                    response = asyncio.run(send_message( 
-                                                        numeros[row['NUMERO_TELEFONO']].replace('+', ''),
-                                                        template_name=template_name, 
-                                                        components=components,
-                                                        from_number=from_number))
-                    print(response)
-                    
-                    m_status = 'error'
-                    wamid = ''
-                    
-                    if 'messages' in response.keys():
-                        messages = response['messages'][0]
-
-                        if messages['message_status'] == 'accepted':
-                            m_status = 'ok'
-                            counter += 1
-                        else:
-                            print('error',components)
-                        wamid = messages['id']
                         
-                  
-                    n_dic = copy.deepcopy(message)
-                    
-                    li = n_dic['components']
-                    
-                    for ixx, i in enumerate(pre_components):
-                        if i is not None:
-                            aux = i.copy()
-                            
-                            if 'text' in i.keys():
-                                
-                                formatiado = format_string(aux['text'], data=df.iloc[[index]])
-                                print(formatiado)
-                                aux['text'] = formatiado
-                                
-                                li[ixx] = aux
-                                
+                        component_dic['BODY']['parameters'] = body_parameters
 
-                       
+                        
+                        components  = [component_dic['HEADER'], component_dic['BODY']]
+                        
                     
+                        
+                        response = asyncio.run(send_message( 
+                                                            numeros[row['NUMERO_TELEFONO']].replace('+', ''),
+                                                            template_name=template_name, 
+                                                            components=components,
+                                                            from_number=from_number))
+                        print(response)
+                        
+                        m_status = 'error'
+                        wamid = ''
+                        
+                        if 'messages' in response.keys():
+                            messages = response['messages'][0]
+
+                            if messages['message_status'] == 'accepted':
+                                m_status = 'ok'
+                                counter += 1
+                            else:
+                                print('error',components)
+                            wamid = messages['id']
+                            
                     
-                    n_dic['components'] = li
-                    print(f'En teoria el mensaje ya fue formateado')      
-                    print('message: ', n_dic)
-                    
-                    r_body = json.dumps(n_dic)
-                    s_body = {}
-                    for ss in li:
-                        if ss:
-                            s_body[ss['type']] = ss
-                    print('insertando en la base de datos...')
-                    print(list(df.columns.values))
-                    if 'RFC' in list(df.columns.values):
-                        print(f'Lol, si trae el rfc {row["RFC"]}')
-                        db.insert_message_registry(message_data={
-                            'date':datetime.now(pytz.timezone("Mexico/General")).strftime("%Y-%m-%d %H:%M:%S"),
-                            'user':body['user'],
-                            'destiny':numeros[row['NUMERO_TELEFONO']].replace('+', ''),
-                            'message': r_body,
-                            'status_envio':m_status,
-                            'type':'template',
-                            'message_name':template_name,
-                            'origin': get_phone_number(from_number),
-                            'wamid':wamid,
-                            'content': json.dumps(s_body),
-                            'tipo': header_type,
-                            'rfc': row['RFC'],
-                            'automatic_response':automatic_response
-                        })
-                        db.update_rfc(row['RFC'], numeros[row['NUMERO_TELEFONO']].replace('+', ''))
-                    else:
-                       
-                        if from_number != 'Edilar':
+                        n_dic = copy.deepcopy(message)
+                        
+                        li = n_dic['components']
+                        
+                        for ixx, i in enumerate(pre_components):
+                            if i is not None:
+                                aux = i.copy()
+                                
+                                if 'text' in i.keys():
+                                    
+                                    formatiado = format_string(aux['text'], data=df.iloc[[index]])
+                                    print(formatiado)
+                                    aux['text'] = formatiado
+                                    
+                                    li[ixx] = aux
+                                    
+
+                        
+                        
+                        
+                        n_dic['components'] = li
+                        print(f'En teoria el mensaje ya fue formateado')      
+                        print('message: ', n_dic)
+                        
+                        r_body = json.dumps(n_dic)
+                        s_body = {}
+                        for ss in li:
+                            if ss:
+                                s_body[ss['type']] = ss
+                        print('insertando en la base de datos...')
+                        print(list(df.columns.values))
+                        if 'RFC' in list(df.columns.values):
+                            rfc = row["RFC"]
+                            if row["RFC"] == None:
+                                row["NUMERO_TELEFONO"]
+                            else:
+                                db.update_rfc(row['RFC'], numeros[row['NUMERO_TELEFONO']].replace('+', ''))
+                            print(f'Lol, si trae el rfc {row["RFC"]}')
                             db.insert_message_registry(message_data={
                                 'date':datetime.now(pytz.timezone("Mexico/General")).strftime("%Y-%m-%d %H:%M:%S"),
                                 'user':body['user'],
                                 'destiny':numeros[row['NUMERO_TELEFONO']].replace('+', ''),
-                                'message': json.dumps(r_body),
+                                'message': r_body,
                                 'status_envio':m_status,
                                 'type':'template',
                                 'message_name':template_name,
                                 'origin': get_phone_number(from_number),
                                 'wamid':wamid,
-                                'content': json.dumps(pre_component_dic),
+                                'content': json.dumps(s_body),
                                 'tipo': header_type,
-                                'rfc': None,
+                                'rfc':rfc,
                                 'automatic_response':automatic_response
                             })
+                            
+                        else:
+                        
+                            if from_number != 'Edilar':
+                                db.insert_message_registry(message_data={
+                                    'date':datetime.now(pytz.timezone("Mexico/General")).strftime("%Y-%m-%d %H:%M:%S"),
+                                    'user':body['user'],
+                                    'destiny':numeros[row['NUMERO_TELEFONO']].replace('+', ''),
+                                    'message': json.dumps(r_body),
+                                    'status_envio':m_status,
+                                    'type':'template',
+                                    'message_name':template_name,
+                                    'origin': get_phone_number(from_number),
+                                    'wamid':wamid,
+                                    'content': json.dumps(pre_component_dic),
+                                    'tipo': header_type,
+                                    'rfc': None,
+                                    'automatic_response':automatic_response
+                                })
+                except Exception as e:
+                    print(repr)
+                    db.insert_message_registry(message_data={
+                                    'date':datetime.now(pytz.timezone("Mexico/General")).strftime("%Y-%m-%d %H:%M:%S"),
+                                    'user':body['user'],
+                                    'destiny': row['NUMERO_TELEFONO'].replace('+', ''),
+                                    'message': json.dumps(r_body),
+                                    'status_envio':m_status,
+                                    'type':'template',
+                                    'message_name':template_name,
+                                    'origin': get_phone_number(from_number),
+                                    'wamid':wamid,
+                                    'content': json.dumps(pre_component_dic),
+                                    'tipo': header_type,
+                                    'rfc': None,
+                                    'automatic_response':automatic_response
+                                })
                     
                     
             response = {
@@ -584,13 +616,20 @@ def send_messages(request):
                 'error':'',
                 'message_count':counter
             }
-            return HttpResponse(json.dumps(response))
+            return HttpResponse(json.dumps(response),status=200)
+         
+        else:
+                return HttpResponse(json.dumps({'status':405,
+                        'error':'bad request xd',
+                        'message_count':0}),status=405)
                                                  
     except Exception as e:
         print(repr(e))
         return HttpResponse(json.dumps({'status':400,
-                        'error':repr(e)}))
+                        'error':repr(e),
+                        'message_count':counter}),status=400)
     
+
 
     
 
@@ -649,6 +688,7 @@ def upload_file(request):
                 display_id = asyncio.run(upload_file_api_2(file_data, from_number))
                 display_id = json.loads(display_id)
                 response = {
+                                        'status':'ok',
                                         'resource_id': resource_id,
                                         'permision':  permision
                              }
@@ -657,16 +697,16 @@ def upload_file(request):
                 if 'id' in display_id.keys():
                     response['display_id'] = display_id['id']
 
-                    return HttpResponse(json.dumps({'status':'ok', 'permisions':response}))
+                    return HttpResponse(json.dumps({'status':'ok', 'permisions':response}), status=200)
                 else:
                     response['display_id'] = None
                     
 
-                    return HttpResponse(json.dumps({'status':'error', 'error':"Error de registro"}))
+                    return HttpResponse(json.dumps({'status':'error', 'error':"Error de registro"}),status=400)
         except Exception as e:
             print('error de registro')
             print(repr(e))
-            return HttpResponse(json.dumps({'status': 'error', 'error':repr(e)}))
+            return HttpResponse(json.dumps({'status': 'error', 'error':repr(e)}), status=400)
 
 
 
@@ -716,7 +756,8 @@ def send_text_message(request):
                             'origin': from_number,
                             'wamid':response['messages'][0]['id'],
                             'content': json.dumps(m_b),
-                            'tipo': 'text'
+                            'tipo': 'text',
+                            'automatic_response':'NULL'
                         })
                         
                 response = {'status':'ok'}

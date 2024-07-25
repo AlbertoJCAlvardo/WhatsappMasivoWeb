@@ -5,12 +5,16 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "type": "chrome",
+            "name": "Python Debugger: Django",
+            "type": "debugpy",
             "request": "launch",
-            "name": "Launch Chrome against localhost",
-            "url": "http://localhost:8080",
-            "webRoot": "${workspaceFolder}",
-            "javascript.validate.enable": false
+            "args": [
+                "runserver",
+                "0.0.0.0:8081"
+            ],
+            "django": true,
+            "autoStartBrowser": false,
+            "program": "${workspaceFolder}/WhatsappMasivo/manage.py"
         }
     ]
 }
