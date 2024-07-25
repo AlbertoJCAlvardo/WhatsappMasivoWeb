@@ -274,10 +274,12 @@ async function add_chats(page){
                 if(contact['PROFILE_NAME'] == ''){
                     nombre = contact['ORIGEN'];
                 }
-                if(contact['PROFILE_NAME'] != ''){
+                if(contact['PROFILE_NAME'] != '' && contact['PROFILE_NAME'] != 'None'){
                     nombre = contact['PROFILE_NAME'];
                 }
-                
+                if(contact['PROFILE_NAME']==='None'){
+                    nombre = contact['TEL_USUARIO'];
+                }
                 
                 let cc  = new ContactChat(label, contact['TIEMPO'], contact['CONVERSATION_ID'], contact['FECHA'], 
                     nombre, contact['UNREAD_MESSAGES'], contact['ORIGEN'], contact['TEL_EMPRESA'], contact['TEL_USUARIO']);
