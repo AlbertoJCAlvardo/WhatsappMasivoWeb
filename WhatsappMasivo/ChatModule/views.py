@@ -66,6 +66,7 @@ def whatsapp_webhook(request):
 
  
     if request.method == 'POST':
+      
         data = json.loads(request.body)
        
         print(f'\n\n\n\n')
@@ -83,30 +84,32 @@ def whatsapp_webhook(request):
                         if 'contacts' in changes['value'].keys() and 'messages' in changes['value'].keys():
                             value =  changes['value']
 
-                            profile_name = value['contacts'][0]['profile']['name']
+                            profile_name = DatabaseManager.sanitize_input(value['contacts'][0]['profile']['name'])
                           
-                            from_id =  value['messages'][0]['from']
-                            wamid = value['messages'][0]['id']
+                            from_id =  DatabaseManager.sanitize_input(value['messages'][0]['from'])
+                            wamid = DatabaseManager.sanitize_input(value['messages'][0]['id'])
                             timestamp = value['messages'][0]['timestamp']
                             datetimes = datetime.fromtimestamp(int(timestamp))
                             td = datetime.now(pytz.timezone("Mexico/General"))
                             if td.hour != datetimes.hour or (td.minute != datetimes.minute >= 5):
                                 
                                 datetimes = datetime.fromtimestamp(int(timestamp)) - timedelta(hours=6)
-                            destiny = value['metadata']['display_phone_number']
-                            message_type = value['messages'][0]['type']
+                            destiny = DatabaseManager.sanitize_input(value['metadata']['display_phone_number'])
+                            message_type = DatabaseManager.sanitize_input(value['messages'][0]['type'])
                             content =  json.dumps(value['messages'][0][message_type])
                             
-
+                            
                             dm = DatabaseManager('sistemas')
                             query = f"""
                                         SELECT USUARIO, FECHA
                                         FROM CL.WHATSAPP_COMUNICATE V
-                                        WHERE DESTINO LIKE '%52' || '{from_id[3:]}%'
-                                        AND ORIGEN LIKE '%{destiny}%'
+                                        WHERE DESTINO LIKE '%52' || '{DatabaseManager.sanitize_input(from_id[3:])}%'
+                                        AND ORIGEN LIKE '%{DatabaseManager.sanitize_input(destiny)}%'
                                         ORDER BY V.FECHA DESC
 
                                     """
+                            
+
                             if datetime.now().hour > 11 and datetime.now().hour < 13:
                                 print(query)
                             headers, dta = dm.execute_query(query=query)
@@ -121,7 +124,8 @@ def whatsapp_webhook(request):
                             query = f"""
                                         SELECT DESTINO
                                         FROM CL.WHATSAPP_MASIVO_RESPUESTA
-                                        WHERE ORIGEN = '{from_id}' AND DESTINO = '{destiny}'
+                                        WHERE ORIGEN = '{DatabaseManager.sanitize_input(from_id)}' 
+                                        AND DESTINO = '{DatabaseManager.sanitize_input(destiny)}'
                                         AND TO_CHAR(FECHA,'RRRR-MM-DD') =  '{td.strftime('%Y-%m-%d')}'
                                     """
                             print(td.strftime('%Y-%m-%d'))
@@ -149,17 +153,18 @@ def whatsapp_webhook(request):
                                 query = f"""
                                         SELECT RESPUESTA_AUTOMATICA
                                         FROM CL.WHATSAPP_COMUNICATE
-                                        WHERE ORIGEN LIKE '%' || SUBSTR('{destiny}',-3) || '%'
-                                            AND DESTINO LIKE '%' || SUBSTR('{from_id}',-3) || '%'
+                                        WHERE ORIGEN LIKE '%' || SUBSTR('{DatabaseManager.sanitize_input(destiny)}',-3) || '%'
+                                            AND DESTINO LIKE '%' || SUBSTR('{DatabaseManager.sanitize_input(from_id)}',-3) || '%'
                                             AND TIPO_MENSAJE = 'template'
                                         ORDER BY FECHA DESC
                                         
                                     """
-                                print('existe respuesta automatica')
+                                
 
                                 data, respuesta = dm.execute_query(query)
                               
                                 if respuesta:
+                                    print('existe respuesta automatica')
                                     if respuesta[0] :
                                         if respuesta[0][0] != '':
                                             print(respuesta[0])
@@ -182,7 +187,7 @@ def whatsapp_webhook(request):
                                             if 'messaging_product' in response.keys():
                                                 db = DatabaseManager('sistemas')
                                                 db.insert_message_registry(message_data={
-                                                            'date':datetime.now(pytz.timezone("Mexico/General")).strftime("%Y-%m-%d %H:%M:%S") ,
+                                                            'date':datetime.now(pytz.timezone("Mexico/General")),
                                                             'user':user,
                                                             'destiny': from_id,
                                                             'message': m_m,
@@ -250,7 +255,7 @@ def chat_list(request):
                         
                         SELECT TELEFONO
                         FROM CL.CL_SYS_PROYECTO_WA
-                        WHERE PROYECTO_ID = '{project}' 
+                        WHERE PROYECTO_ID = '{DatabaseManager.sanitize_input(project)}' 
                         
                     """
         dm1 = DatabaseManager('sistemas')
@@ -264,8 +269,107 @@ def chat_list(request):
         print(profile_name)
         try:
             dm = DatabaseManager('sistemas')
+            print(data[0][0], settings.PHONE_NUMBER)
+            if data[0][0] == settings.PHONE_NUMBER:
+                query = f"""
+                        SELECT   CASE
+                            WHEN FLOW = 'ENVIADO' THEN '521' || SUBSTR(V.ORIGEN,3,13)
+                            ELSE V.ORIGEN
+                            END ORIGEN,
+                            CASE
+                                WHEN FLOW = 'ENVIADO'  THEN B.DESTINO
+                                ELSE V.DESTINO
+                            END
+                            TEL_EMPRESA,
+                            CASE
+                                WHEN FLOW = 'ENVIADO' THEN B.ORIGEN
+                                ELSE  V.ORIGEN
+                            END TEL_USUARIO,
 
-            query = f"""
+                            FECHA, TIEMPO, USUARIO, UNREAD_MESSAGES, STATUS_CONVERSACION, {profile_name} AS PROFILE_NAME, CONTENIDO,   TIPO, FLOW, START_DATE, START_TIME
+                        FROM (SELECT
+                                            '52' || SUBSTR(V.ORIGEN,4,13) ORIGEN,
+                                            V.DESTINO,
+                                            TO_CHAR(V.FECHA, 'MM/DD/RRRR')                  FECHA,
+                                            TO_CHAR(FECHA, 'HH24:MI:SS')                       TIEMPO,
+                                            V.USUARIO,
+                                            (SELECT COUNT(*)
+                                            FROM CL.WHATSAPP_MASIVO_RESPUESTA
+                                            WHERE ORIGEN = V.ORIGEN AND STATUS = 'unread') UNREAD_MESSAGES,
+                                            CASE
+                                                WHEN SYSDATE - V.FECHA >= 1 THEN 'INACTIVA'
+                                                ELSE 'ACTIVA'
+                                                END                                         STATUS_CONVERSACION,
+                                            PROFILE_NAME,
+
+                                            CONTENIDO,
+                                            TIPO, 'RECIBIDO' FLOW,
+                                            ORIGEN FACILIDAD_COBRANZA_RFC
+
+                                    FROM CL.WHATSAPP_MASIVO_RESPUESTA V
+
+                                    UNION
+                                    SELECT
+                                            B.DESTINO ORIGEN,
+                                            B.ORIGEN DESTINO,
+                                            TO_CHAR(B.FECHA, 'MM/DD/RRRR')                  FECHA,
+                                            TO_CHAR(FECHA, 'HH24:MI:SS')                       TIEMPO,
+                                            B.USUARIO,
+                                            0 UNREAD_MESSAGES,
+                                            CASE
+                                                WHEN SYSDATE - B.FECHA >= 1 THEN 'INACTIVA'
+                                                ELSE 'ACTIVA'
+                                                END                                         STATUS_CONVERSACION,
+                                            CASE WHEN '52' || SUBSTR(B.DESTINO,3,13) IN (SELECT DISTINCT(ORIGEN) FROM CL.WHATSAPP_MASIVO_RESPUESTA) THEN
+
+
+                                            (SELECT DISTINCT(PROFILE_NAME) FROM CL.WHATSAPP_MASIVO_RESPUESTA WHERE ORIGEN = '521' || SUBSTR(B.DESTINO,3,13))
+
+                                            ELSE
+                                                B.DESTINO
+                                            END PROFILE_NAME,
+                                            CONTENIDO,
+                                            TIPO, 'ENVIADO' FLOW,
+                                            B.FACILIDAD_COBRANZA_RFC
+
+                                    FROM CL.WHATSAPP_COMUNICATE B
+                                    WHERE STATUS_MENSAJE != 'failed') V
+
+
+                                    JOIN(
+                                        SELECT DISTINCT(ORIGEN), TO_CHAR(MAX(A.START_DATE), 'MM/DD/RRRR') START_DATE, TO_CHAR(MAX(A.START_DATE), 'HH24:MI:SS') START_TIME, DESTINO
+                                        FROM(
+
+                                            SELECT DISTINCT('52' || SUBSTR(ORIGEN,4,13)) ORIGEN, MAX(FECHA) START_DATE, DESTINO
+                                            
+                                            FROM CL.WHATSAPP_MASIVO_RESPUESTA
+                                            WHERE USUARIO = '{DatabaseManager.sanitize_input(user)}'
+                                            AND DESTINO = '{DatabaseManager.sanitize_input(data[0][0])}'
+
+                                            GROUP BY ORIGEN, FECHA, DESTINO
+
+                                            UNION
+                                            SELECT DISTINCT(DESTINO) ORIGEN, MAX(FECHA) START_DATE, ORIGEN DESTINO
+                                        
+                                            FROM CL.WHATSAPP_COMUNICATE
+                                            WHERE USUARIO = '{DatabaseManager.sanitize_input(user)}' AND STATUS_MENSAJE != 'failed'
+                                            AND ORIGEN = '{DatabaseManager.sanitize_input(data[0][0])}'
+                                            
+                                            GROUP BY DESTINO, ORIGEN
+                                            ORDER BY START_DATE DESC
+                                        ) A
+
+                                        GROUP BY ORIGEN, DESTINO
+                                        ORDER BY START_DATE DESC, START_TIME DESC
+                                    ) B
+                                    ON V.ORIGEN = B.ORIGEN AND V.FECHA = START_DATE AND V.TIEMPO = START_TIME
+                                    WHERE V.USUARIO = '{DatabaseManager.sanitize_input(user)}' AND V.CONTENIDO IS NOT NULL
+                                    ORDER BY FECHA DESC, TIEMPO DESC
+                                    
+
+                                                """
+            else:
+                query = f"""
                     SELECT   CASE
                         WHEN FLOW = 'ENVIADO' THEN '521' || SUBSTR(V.ORIGEN,3,13)
                         ELSE V.ORIGEN
@@ -298,9 +402,7 @@ def chat_list(request):
 
                                         CONTENIDO,
                                         TIPO, 'RECIBIDO' FLOW,
-                                        (SELECT DISTINCT FACILIDAD_COBRANZA_RFC
-                                          FROM CL.WHATSAPP_COMUNICATE WHERE ORIGEN LIKE '%'||SUBSTR(V.DESTINO,-10)||'%'
-                                            AND DESTINO LIKE '%'|| SUBSTR(V.ORIGEN,-10) || '%' AND FACILIDAD_COBRANZA_RFC IS NOT NULL) FACILIDAD_COBRANZA_RFC
+                                        ORIGEN FACILIDAD_COBRANZA_RFC
 
                                 FROM CL.WHATSAPP_MASIVO_RESPUESTA V
 
@@ -339,8 +441,7 @@ def chat_list(request):
                                         SELECT DISTINCT('52' || SUBSTR(ORIGEN,4,13)) ORIGEN, MAX(FECHA) START_DATE, DESTINO
                                         
                                         FROM CL.WHATSAPP_MASIVO_RESPUESTA
-                                        WHERE USUARIO = '{user}'
-                                         AND DESTINO = '{data[0][0]}'
+                                        WHERE DESTINO = '{DatabaseManager.sanitize_input(data[0][0])}'
 
                                         GROUP BY ORIGEN, FECHA, DESTINO
 
@@ -348,8 +449,8 @@ def chat_list(request):
                                         SELECT DISTINCT(DESTINO) ORIGEN, MAX(FECHA) START_DATE, ORIGEN DESTINO
                                       
                                         FROM CL.WHATSAPP_COMUNICATE
-                                        WHERE USUARIO = '{user}' AND STATUS_MENSAJE != 'failed'
-                                         AND ORIGEN = '{data[0][0]}'
+                                        WHERE STATUS_MENSAJE != 'failed'
+                                         AND ORIGEN = '{DatabaseManager.sanitize_input(data[0][0])}'
                                          
                                         GROUP BY DESTINO, ORIGEN
                                         ORDER BY START_DATE DESC
@@ -359,12 +460,12 @@ def chat_list(request):
                                     ORDER BY START_DATE DESC, START_TIME DESC
                                 ) B
                                 ON V.ORIGEN = B.ORIGEN AND V.FECHA = START_DATE AND V.TIEMPO = START_TIME
-                                WHERE V.USUARIO = '{user}' AND V.CONTENIDO IS NOT NULL
+                                WHERE  V.CONTENIDO IS NOT NULL
                                 ORDER BY FECHA DESC, TIEMPO DESC
                                 
 
                                             """
-            print(query)
+
             headers, conversations = dm.execute_query(query)
            
             
@@ -395,14 +496,13 @@ def chat_window(request):
                         
                         SELECT TELEFONO
                         FROM CL.CL_SYS_PROYECTO_WA
-                        WHERE PROYECTO_ID = '{project}' 
+                        WHERE PROYECTO_ID = '{DatabaseManager.sanitize_input(project)}' 
                         
                     """
         dm1 = DatabaseManager('sistemas')
         headers, data = dm1.execute_query(ph_query)
 
-        print(f'ph: {phone_number}\n\n\n, {type(phone_number)}')
-        print(f'pg: {page}\n\n\n')
+        
         if phone_number != None:
             if len(phone_number) > 9:
                 if len(phone_number) == 12:
@@ -416,8 +516,8 @@ def chat_window(request):
                                 SELECT FECHA AS datetime, TO_CHAR(FECHA, 'MM-DD-RR') FECHA, TO_CHAR(FECHA, 'HH24:MI') TIEMPO, ORIGEN, DESTINO, WAMID, CONVERSATION_ID, TIPO,
                                         CONTENIDO, STATUS, USUARIO, 'RECIBIDO' FLOW
                                     FROM CL.WHATSAPP_MASIVO_RESPUESTA
-                                    WHERE ORIGEN LIKE '%{phone_number}%' AND DESTINO = '{data[0][0]}'
-                                          AND USUARIO = '{user}'
+                                    WHERE ORIGEN LIKE '%{DatabaseManager.sanitize_input(phone_number)}%' AND DESTINO = '{DatabaseManager.sanitize_input(data[0][0])}'
+                                          AND USUARIO = '{DatabaseManager.sanitize_input(user)}'
                                     UNION
                                     (SELECT FECHA AS DATETIME, TO_CHAR(FECHA, 'MM-DD-RR') FECHA,
                                             TO_CHAR(FECHA, 'HH24:MI') TIEMPO,
@@ -431,8 +531,9 @@ def chat_window(request):
                                             USUARIO ,
                                             'ENVIADO' FLOW
                                     FROM CL.WHATSAPP_COMUNICATE
-                                    WHERE  DESTINO LIKE '%{phone_number}%' AND ORIGEN  = '{data[0][0]}'
-                                          AND USUARIO = '{user}' AND STATUS_MENSAJE != 'failed'
+                                    WHERE  DESTINO LIKE '%{DatabaseManager.sanitize_input(phone_number)}%'
+                                           AND ORIGEN  = '{DatabaseManager.sanitize_input(data[0][0])}'
+                                          AND USUARIO = '{DatabaseManager.sanitize_input(user)}' AND STATUS_MENSAJE != 'failed'
                                     )
 
                                     ORDER BY DATETIME DESC
@@ -501,7 +602,7 @@ def get_pages(request):
                                SELECT FECHA AS DATETIME, TO_CHAR(FECHA, 'MM-DD-RR') FECHA, TO_CHAR(FECHA, 'HH24:MI') TIEMPO, ORIGEN, DESTINO, WAMID, CONVERSATION_ID, TIPO,
                                     CONTENIDO, STATUS, USUARIO, 'RECIBIDO' FLOW
                                 FROM CL.WHATSAPP_MASIVO_RESPUESTA
-                                WHERE ORIGEN = '{phone_number}'
+                                WHERE ORIGEN = '{DatabaseManager.sanitize_input(phone_number)}'
                                 UNION
                                 (SELECT FECHA AS DATETIME, TO_CHAR(FECHA, 'MM-DD-RR') FECHA,
                                         TO_CHAR(FECHA, 'HH24:MI') TIEMPO,
@@ -515,7 +616,7 @@ def get_pages(request):
                                         USUARIO ,
                                         'ENVIADO' FLOW
                                 FROM CL.WHATSAPP_COMUNICATE
-                                WHERE DESTINO = '{phone_number}'
+                                WHERE DESTINO = '{DatabaseManager.sanitize_input(phone_number)}'
                                 )
                                 )   
                              """)
@@ -548,7 +649,7 @@ def update_seen(request):
                             
                             SELECT TELEFONO
                             FROM CL.CL_SYS_PROYECTO_WA
-                            WHERE PROYECTO_ID = '{project}' 
+                            WHERE PROYECTO_ID = '{DatabaseManager.sanitize_input(project)}' 
                             
                         """
             dm1 = DatabaseManager('sistemas')
@@ -579,7 +680,7 @@ def contact_lookup(request):
                             
                             SELECT TELEFONO
                             FROM CL.CL_SYS_PROYECTO_WA
-                            WHERE PROYECTO_ID = '{project}' 
+                            WHERE PROYECTO_ID = '{DatabaseManager.sanitize_input(project)}' 
                             
                         """
             dm1 = DatabaseManager('sistemas')
@@ -592,8 +693,8 @@ def contact_lookup(request):
                                             FROM(
                                             SELECT COUNT(*) UNREAD_MESSAGES
                                             FROM CL.WHATSAPP_MASIVO_RESPUESTA
-                                            WHERE  STATUS = 'unread' and DESTINO LIKE '%{data[0][0]}%'  
-                                                   AND USUARIO = '{user}')
+                                            WHERE  STATUS = 'unread' and DESTINO LIKE '%{DatabaseManager.sanitize_input(data[0][0])}%'  
+                                                   AND USUARIO = '{DatabaseManager.sanitize_input(user)}')
                 """
             
             dm = DatabaseManager('sistemas')
@@ -623,7 +724,7 @@ def chat_lookup(request):
                             
                             SELECT TELEFONO
                             FROM CL.CL_SYS_PROYECTO_WA
-                            WHERE PROYECTO_ID = '{project}' 
+                            WHERE PROYECTO_ID = '{DatabaseManager.sanitize_input(project)}' 
                             
                         """
             dm1 = DatabaseManager('sistemas')
@@ -635,8 +736,9 @@ def chat_lookup(request):
                                             FROM(
                                             SELECT COUNT(*) UNREAD_MESSAGES
                                             FROM CL.WHATSAPP_MASIVO_RESPUESTA
-                                            WHERE   STATUS = 'unread' and DESTINO = '{data[0][0]}'  
-                                                    AND USUARIO = '{user}' AND ORIGEN = '{phone_number}'
+                                            WHERE   STATUS = 'unread' and DESTINO = '{DatabaseManager.sanitize_input(data[0][0])}'  
+                                                    AND USUARIO = '{DatabaseManager.sanitize_input(user)}' 
+                                                    AND ORIGEN = '{DatabaseManager.sanitize_input(phone_number)}'
                                             )
                 """
 

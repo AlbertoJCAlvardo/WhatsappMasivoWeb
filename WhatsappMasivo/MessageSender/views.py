@@ -43,33 +43,35 @@ def login(request):
             request = json.loads(request.body)
             user = request['user']
             password = request['password']
-            print(user, password)
-            db = DatabaseManager()
-            start = time()
-            validation = validate_login(user=user,
-                                           password=password)
-            print(validation)
-            exec_time = time() - start
-            print(f'Query exec time: {exec_time}')
+            if(len(user)<20 and len(password)<30):
+                print(user, password)
+                db = DatabaseManager()
+                start = time()
+                validation = validate_login(user=user,
+                                            password=password)
+                print(validation)
+                exec_time = time() - start
+                print(f'Query exec time: {exec_time}')
 
-            if validation == 'correct':
-                header, sesion_id = db.execute_query("SELECT  pkg_general.f_sesion FROM dual")
-                print(sesion_id)
-                return HttpResponse(json.dumps({'message':'ok',
-                                                'session_id':sesion_id[0][0]}))
-            else:
-                message = ""
-                if validation == 'user_not_exist':
-                    message = "El usuario no existe"
-                if validation == 'wrong_password':
-                    message = 'Contraseña Incorrecta'
-                if validation == 'unauthorized':
-                    message = 'Usuario no autorizado'
+                if validation == 'correct':
+                    header, sesion_id = db.execute_query("SELECT  pkg_general.f_sesion FROM dual")
+                    print(sesion_id)
+                    return HttpResponse(json.dumps({'message':'ok',
+                                                    'session_id':sesion_id[0][0]}))
+                else:
+                    message = ""
+                    if validation == 'user_not_exist':
+                        message = "El usuario no existe"
+                    if validation == 'wrong_password':
+                        message = 'Contraseña Incorrecta'
+                    if validation == 'unauthorized':
+                        message = 'Usuario no autorizado'
+                        
+                    print(message)
+                    return HttpResponse(json.dumps({'message':message}))
                     
-                print(message)
-                return HttpResponse(json.dumps({'message':message}))
-                
-                
+            else:
+                     return HttpResponse(json.dumps({'message':'Parametros invalidos'}))  
 
         except Exception as e:
             print(repr(e))
@@ -468,7 +470,7 @@ def send_messages(request):
                     if True:  
                         if header_type == 'text':
                             header_parameters = []
-                            pcc_d =pre_component_dic.copy()
+                            pcc_d =copy.deepcopy(pre_component_dic)
                             header_message = pcc_d['HEADER']['text']
                             formatted_header, tokens_header = set_wa_format(message=header_message, data=df.iloc[[index], :])
                             
@@ -559,7 +561,7 @@ def send_messages(request):
                                 db.update_rfc(row['RFC'], numeros[row['NUMERO_TELEFONO']].replace('+', ''))
                             print(f'Lol, si trae el rfc {row["RFC"]}')
                             db.insert_message_registry(message_data={
-                                'date':datetime.now(pytz.timezone("Mexico/General")).strftime("%Y-%m-%d %H:%M:%S"),
+                                'date':datetime.now(pytz.timezone("Mexico/General")),
                                 'user':body['user'],
                                 'destiny':numeros[row['NUMERO_TELEFONO']].replace('+', ''),
                                 'message': r_body,
@@ -571,14 +573,15 @@ def send_messages(request):
                                 'content': json.dumps(s_body),
                                 'tipo': header_type,
                                 'rfc':rfc,
-                                'automatic_response':automatic_response
+                                'automatic_response':automatic_response,
+                                'body_text': s_body['BODY']['text']
                             })
                             
                         else:
                         
                             if from_number != 'Edilar':
                                 db.insert_message_registry(message_data={
-                                    'date':datetime.now(pytz.timezone("Mexico/General")).strftime("%Y-%m-%d %H:%M:%S"),
+                                    'date':datetime.now(pytz.timezone("Mexico/General")),
                                     'user':body['user'],
                                     'destiny':numeros[row['NUMERO_TELEFONO']].replace('+', ''),
                                     'message': json.dumps(r_body),
@@ -587,15 +590,16 @@ def send_messages(request):
                                     'message_name':template_name,
                                     'origin': get_phone_number(from_number),
                                     'wamid':wamid,
-                                    'content': json.dumps(pre_component_dic),
+                                    'content': json.dumps(s_body),
                                     'tipo': header_type,
                                     'rfc': None,
-                                    'automatic_response':automatic_response
+                                    'automatic_response':automatic_response,
+                                    'body_text': s_body['BODY']['text']
                                 })
                 except Exception as e:
                     print(repr)
                     db.insert_message_registry(message_data={
-                                    'date':datetime.now(pytz.timezone("Mexico/General")).strftime("%Y-%m-%d %H:%M:%S"),
+                                    'date':datetime.now(pytz.timezone("Mexico/General")),
                                     'user':body['user'],
                                     'destiny': row['NUMERO_TELEFONO'].replace('+', ''),
                                     'message': json.dumps(r_body),
@@ -607,7 +611,9 @@ def send_messages(request):
                                     'content': json.dumps(pre_component_dic),
                                     'tipo': header_type,
                                     'rfc': None,
-                                    'automatic_response':automatic_response
+                                    'automatic_response':automatic_response,
+                                    'body_text':None
+                                    
                                 })
                     
                     
@@ -746,7 +752,7 @@ def send_text_message(request):
             if 'messaging_product' in response.keys():
                 db = DatabaseManager('sistemas')
                 db.insert_message_registry(message_data={
-                            'date':datetime.now(pytz.timezone("Mexico/General")).strftime("%Y-%m-%d %H:%M:%S") ,
+                            'date':datetime.now(pytz.timezone("Mexico/General")),
                             'user':user,
                             'destiny': to,
                             'message': m_m,
@@ -814,7 +820,7 @@ def format_history(request):
                            
                             SELECT TELEFONO
                             FROM CL.CL_SYS_PROYECTO_WA
-                            WHERE PROYECTO_ID = '{project}' 
+                            WHERE PROYECTO_ID = '{DatabaseManager.sanitize_input(project)}' 
                             
                         """
             dm1 = DatabaseManager('sistemas')
@@ -849,7 +855,7 @@ def format_history(request):
                             TRUNC((SELECT COUNT(*) FROM CL.WHATSAPP_COMUNICATE WHERE STATUS_MENSAJE IN ('sent', 'delivered') AND V.NOMBRE_MENSAJE = NOMBRE_MENSAJE) * 0.7,2) MONTO_POR_ENVIO,
                         TO_CHAR(V.FECHA, 'RRRR-MM-DD') FECHA, ORIGEN, USUARIO
                         FROM CL.WHATSAPP_COMUNICATE V
-                        WHERE ORIGEN = '{data[0][0]}'
+                        WHERE ORIGEN = '{DatabaseManager.sanitize_input(data[0][0])}'
                         GROUP BY NOMBRE_MENSAJE, FECHA, ORIGEN, USUARIO
                         ORDER BY FECHA DESC)
                         ORDER BY FECHA DESC
@@ -921,7 +927,7 @@ def get_message_base(request,  template_name):
                             END RAZON_FALLA,
                             FALLO_META
                             FROM CL.WHATSAPP_COMUNICATE V
-                            WHERE (STATUS_MENSAJE = 'failed' OR STATUS_ENVIO <> 'ok') AND V.NOMBRE_MENSAJE = '{message_name}'
+                            WHERE (STATUS_MENSAJE = 'failed' OR STATUS_ENVIO <> 'ok') AND V.NOMBRE_MENSAJE = '{DatabaseManager.sanitize_input(message_name)}'
                             
                             ORDER BY FECHA DESC
                         """
